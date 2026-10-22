@@ -88,3 +88,7 @@ export const deleteProducto = (id)       => apiFetch(`/api/productos/${id}`, { m
 export const getMovimientos   = (desde, hasta) => apiFetch(`/api/movimientos?desde=${desde}&hasta=${hasta}`);
 export const postMovimiento   = (data)         => apiFetch('/api/movimientos', { method: 'POST', body: JSON.stringify(data) });
 export const deleteMovimiento = (id)           => apiFetch(`/api/movimientos/${id}`, { method: 'DELETE' });
+
+// Cotizaciones
+export const getCotizaciones = ()  => apiFetch('/api/cotizaciones');
+export const putCotizacion   = (q) => apiFetch(`/api/cotizaciones/${q.id}`, { method: 'PUT', body: JSON.stringify(q) });

@@ -1,35 +1,36 @@
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Inter',sans-serif;background:#f5f6fa;color:#1a1d23;min-height:100vh;font-size:14px;}
+:root{--topbar-h:48px;}
 
 /* ── LAYOUT ── */
 .app-shell{display:flex;min-height:100vh;}
-.sidebar{width:220px;background:#fff;border-right:1px solid #e5e7eb;display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;}
+.sidebar{width:220px;background:#fff;border-right:1px solid #e5e7eb;display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;height:100dvh;z-index:1210;transform:translateX(-100%);visibility:hidden;transition:transform .25s ease,visibility 0s linear .25s;}
 .sidebar-brand{padding:20px 18px 16px;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;gap:10px;}
 .sidebar-brand-icon{width:36px;height:36px;background:#1a56db;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .sidebar-brand-icon i{color:#fff;font-size:18px;}
 .sidebar-brand-text h2{font-size:14px;font-weight:600;color:#111827;line-height:1.2;}
 .sidebar-brand-text p{font-size:11px;color:#9ca3af;margin-top:1px;}
-.sidebar-nav{flex:1;padding:12px 10px;display:flex;flex-direction:column;gap:2px;}
+.sidebar-nav{flex:1;padding:12px 10px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;}
 .nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;font-size:13px;font-weight:500;color:#6b7280;cursor:pointer;text-decoration:none;transition:all .15s;border:none;background:none;width:100%;text-align:left;}
 .nav-item:hover{background:#f3f4f6;color:#374151;}
 .nav-item.active{background:#eff6ff;color:#1a56db;}
 .nav-item i{font-size:17px;flex-shrink:0;}
 .nav-section-label{font-size:10px;font-weight:600;color:#d1d5db;letter-spacing:.8px;text-transform:uppercase;padding:14px 12px 4px;}
-.sidebar-footer{padding:14px 10px;border-top:1px solid #f3f4f6;}
-.main-content{margin-left:220px;padding:28px 28px;flex:1;min-width:0;}
-.page{max-width:960px;margin:0 auto;}
+.sidebar-footer{padding:14px 10px;padding-bottom:calc(14px + env(safe-area-inset-bottom,0px));border-top:1px solid #f3f4f6;}
+.main-content{margin-left:0;padding:0;flex:1;min-width:0;transition:margin-left .25s ease;}
+.page{max-width:1100px;margin:0 auto;}
 
 /* ── HEADER ── */
-.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;}
-.brand{display:flex;align-items:center;gap:12px;}
-.brand-icon{width:40px;height:40px;background:#1a56db;border-radius:10px;display:flex;align-items:center;justify-content:center;}
+.header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:24px;}
+.brand{display:flex;align-items:center;gap:12px;min-width:0;}
+.brand-icon{width:40px;height:40px;background:#1a56db;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .brand-icon.red{background:#dc2626;}
 .brand-icon i{color:#fff;font-size:20px;}
 .brand h1{font-size:18px;font-weight:600;color:#111827;}
 .brand p{font-size:12px;color:#6b7280;margin-top:1px;}
-.header-right{display:flex;align-items:center;gap:10px;}
+.header-right{display:flex;align-items:center;gap:10px;flex-shrink:0;}
 .chip{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:7px 12px;font-size:13px;color:#6b7280;}
-.btn-export{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:7px 14px;font-size:13px;color:#374151;cursor:pointer;font-family:'Inter',sans-serif;font-weight:500;transition:border-color .15s,color .15s;}
+.btn-export{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:7px 14px;font-size:13px;color:#374151;cursor:pointer;font-family:'Inter',sans-serif;font-weight:500;transition:border-color .15s,color .15s;white-space:nowrap;}
 .btn-export:hover{border-color:#1a56db;color:#1a56db;}
 
 /* ── OFFLINE BANNER ── */
@@ -121,7 +122,7 @@ body{font-family:'Inter',sans-serif;background:#f5f6fa;color:#1a1d23;min-height:
 .proy-title{font-size:14px;font-weight:600;color:#111827;display:flex;align-items:center;gap:7px;}
 .proy-title i{color:#6b7280;font-size:15px;}
 .proy-add-row{display:flex;gap:8px;margin-bottom:12px;}
-.proy-add-row input{flex:1;border:1.5px solid #e5e7eb;border-radius:8px;padding:8px 12px;font-size:13px;color:#111827;font-family:'Inter',sans-serif;outline:none;transition:border-color .15s;background:#fafafa;}
+.proy-add-row input{flex:1;min-width:0;border:1.5px solid #e5e7eb;border-radius:8px;padding:8px 12px;font-size:13px;color:#111827;font-family:'Inter',sans-serif;outline:none;transition:border-color .15s;background:#fafafa;}
 .proy-add-row input:focus{border-color:#1a56db;background:#fff;}
 .btn-proy-add{background:#1a56db;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:5px;transition:background .15s;white-space:nowrap;}
 .btn-proy-add:hover{background:#1648c8;}
@@ -159,7 +160,7 @@ body{font-family:'Inter',sans-serif;background:#f5f6fa;color:#1a1d23;min-height:
 .table-title{font-size:14px;font-weight:600;color:#111827;display:flex;align-items:center;gap:6px;}
 .table-title i{color:#6b7280;}
 .table-actions{display:flex;align-items:center;gap:8px;}
-.badge{background:#f3f4f6;border-radius:20px;padding:3px 10px;font-size:12px;color:#6b7280;}
+.badge{background:#f3f4f6;border-radius:20px;padding:3px 10px;font-size:12px;color:#6b7280;white-space:nowrap;}
 table{width:100%;border-collapse:collapse;}
 thead th{padding:9px 16px;text-align:left;font-size:11px;color:#9ca3af;font-weight:600;letter-spacing:.5px;text-transform:uppercase;background:#fafafa;border-bottom:1px solid #f3f4f6;}
 tbody tr{border-bottom:1px solid #f9fafb;transition:background .1s;}
@@ -193,7 +194,7 @@ td{padding:11px 16px;font-size:13px;color:#374151;}
 /* ── MODAL ── */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:500;display:none;align-items:center;justify-content:center;padding:20px;}
 .modal-overlay.open{display:flex;}
-.modal{background:#fff;border-radius:16px;padding:28px;width:100%;max-width:480px;box-shadow:0 8px 32px rgba(0,0,0,.12);}
+.modal{background:#fff;border-radius:16px;padding:28px;width:100%;max-width:480px;max-height:92vh;max-height:92dvh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.12);}
 .modal-title{font-size:16px;font-weight:600;color:#111827;margin-bottom:20px;display:flex;align-items:center;gap:8px;}
 .modal-title i{color:#1a56db;}
 .modal-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
@@ -213,8 +214,8 @@ td{padding:11px 16px;font-size:13px;color:#374151;}
 .btn-save:disabled{background:#9ca3af;cursor:not-allowed;}
 
 /* ── TOAST ── */
-.toast-wrap{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:999;pointer-events:none;}
-.toast{background:#111827;color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:500;opacity:0;transform:translateY(12px);transition:all .25s ease;pointer-events:none;white-space:nowrap;}
+.toast-wrap{position:fixed;bottom:24px;bottom:calc(24px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);z-index:999;pointer-events:none;width:max-content;max-width:calc(100vw - 32px);}
+.toast{background:#111827;color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:500;opacity:0;transform:translateY(12px);transition:all .25s ease;pointer-events:none;white-space:normal;text-align:center;}
 .toast.show{opacity:1;transform:translateY(0);}
 .toast.success{background:#065f46;}
 .toast.warn{background:#92400e;}
@@ -226,21 +227,9 @@ td{padding:11px 16px;font-size:13px;color:#374151;}
 @keyframes rowIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 .row-in{animation:rowIn .2s ease both;}
 
-/* ── RESPONSIVE ── */
-@media(max-width:900px){
-  .sidebar{width:60px;}
-  .sidebar-brand-text,.nav-item span,.nav-section-label{display:none;}
-  .sidebar-brand{justify-content:center;padding:16px 0;}
-  .nav-item{justify-content:center;padding:10px;}
-  .main-content{margin-left:60px;}
-}
-@media(max-width:700px){
-  .kpi-row{grid-template-columns:repeat(2,1fr);}
-  .serv-grid{grid-template-columns:repeat(3,1fr);}
-  .cat-grid{grid-template-columns:repeat(3,1fr);}
-  .fields-row{grid-template-columns:1fr 1fr;}
-  .charts-row{grid-template-columns:1fr;}
-}
+/* =====================================================================
+   COTIZACIONES  (todo lo que vive dentro de .app-root)
+   ===================================================================== */
 .app-root {
   --bg-body: #f1f5f9; --bg-surface: #ffffff; --bg-surface-hover: #f8fafc; --bg-surface-alt: #f8fafc;
   --text-main: #0f172a; --text-muted: #64748b; --text-light: #94a3b8;
@@ -315,10 +304,11 @@ td{padding:11px 16px;font-size:13px;color:#374151;}
 .card-title { font-size: 14px; font-weight: 600; color: var(--text-main); text-transform: uppercase;}
 
 .field-row { display: flex; gap: 16px; margin-bottom: 4px; }
-.field { display: flex; flex-direction: column; gap: 6px; flex: 1; }
-.field label { font-size: 12px; font-weight: 500; color: var(--text-muted); }
-.field input, .items-table input, .items-table select, .labor-input { padding: 8px 12px; border: 1px solid var(--border-dark); border-radius: var(--radius-sm); font-size: 14px; font-family: inherit; color: var(--text-main); background: var(--bg-surface); width: 100%; transition: all 0.2s; }
-.field input:focus, .items-table input:focus, .items-table select:focus, .labor-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
+/* OJO: estos .field van con .app-root delante para que NO pisen los formularios de Ventas, Egresos, Clientes y Productos */
+.app-root .field { display: flex; flex-direction: column; gap: 6px; flex: 1; }
+.app-root .field label { font-size: 12px; font-weight: 500; color: var(--text-muted); }
+.app-root .field input, .items-table input, .items-table select, .labor-input { padding: 8px 12px; border: 1px solid var(--border-dark); border-radius: var(--radius-sm); font-size: 14px; font-family: inherit; color: var(--text-main); background: var(--bg-surface); width: 100%; transition: all 0.2s; }
+.app-root .field input:focus, .items-table input:focus, .items-table select:focus, .labor-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
 
 .items-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
 .items-table th { font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; padding: 0 8px 8px 0; text-align: left; border-bottom: 1px solid var(--border-light); }
@@ -426,7 +416,7 @@ td{padding:11px 16px;font-size:13px;color:#374151;}
   width: 82px !important; /* Ligeramente más ancho para montos finales */
 }
 /* =====================================================================
-   RESPONSIVE + CLASES DE LAYOUT
+   RESPONSIVE + CLASES DE LAYOUT (Cotizaciones)
    ===================================================================== */
 
 /* ---------- Clases que antes iban inline ---------- */
@@ -492,9 +482,7 @@ td{padding:11px 16px;font-size:13px;color:#374151;}
 /* Permite que el contenido con scroll interno funcione en flex */
 .main, #viewList, #viewEditor { min-height: 0; }
 
-/* =====================================================================
-   TABLET Y MENORES (≤ 1023px): el resumen baja debajo del editor
-   ===================================================================== */
+/* TABLET Y MENORES (≤ 1023px): el resumen baja debajo del editor */
 @media (max-width: 1023px) {
   #viewEditor { flex-direction: column; overflow-y: auto; }
   .editor { flex: none; overflow: visible; }
@@ -513,9 +501,7 @@ td{padding:11px 16px;font-size:13px;color:#374151;}
   .editor { padding: 20px; }
 }
 
-/* =====================================================================
-   MÓVIL Y TABLET VERTICAL (≤ 767px)
-   ===================================================================== */
+/* MÓVIL Y TABLET VERTICAL (≤ 767px) */
 @media (max-width: 767px) {
   .app-root {
     padding: 0;
@@ -584,8 +570,8 @@ td{padding:11px 16px;font-size:13px;color:#374151;}
   .card { padding: 16px; }
   .card-header { flex-wrap: wrap; gap: 8px; }
   .field-row { flex-direction: column; gap: 12px; }
-  .field { flex: none; width: 100%; }
-  .field input { font-size: 16px; } /* evita zoom automático en iOS */
+  .app-root .field { flex: none; width: 100%; }
+  .app-root .field input { font-size: 16px; } /* evita zoom automático en iOS */
 
   .labor-row { gap: 10px; }
   .labor-input-wrap { width: 160px; }
@@ -619,9 +605,7 @@ td{padding:11px 16px;font-size:13px;color:#374151;}
   .extra-cost-toggle { padding: 4px 0; }
 }
 
-/* =====================================================================
-   MÓVIL PEQUEÑO (≤ 479px)
-   ===================================================================== */
+/* MÓVIL PEQUEÑO (≤ 479px) */
 @media (max-width: 479px) {
   .back-label { display: none; }
   .page-title { font-size: 15px; }
@@ -633,6 +617,7 @@ td{padding:11px 16px;font-size:13px;color:#374151;}
 @media (max-width: 359px) {
   .topbar-actions { grid-template-columns: 1fr; }
 }
+
 /* =====================================================================
    KIT PICKER (modal "Cargar kit")
    ===================================================================== */
@@ -843,13 +828,10 @@ td{padding:11px 16px;font-size:13px;color:#374151;}
 }
 
 /* =====================================================================
-   SIDEBAR RESPONSIVE
+   SIDEBAR OCULTABLE (Layout.jsx)
+   ≥1024px : acoplado a la izquierda, se oculta con el botón ☰
+   <1024px : cajón encima del contenido, con fondo oscuro
    ===================================================================== */
-
-/* Debajo de los modales (kp-overlay usa z-index 50) */
-.sidebar { z-index: 30; }
-
-/* Clases que antes iban inline */
 .sidebar-logout {
   width: 100%;
   background: none;
@@ -875,21 +857,209 @@ td{padding:11px 16px;font-size:13px;color:#374151;}
 .sidebar-logout svg,
 .nav-item svg { flex-shrink: 0; }
 
-/* Tablet y laptop chica: solo íconos */
-@media (min-width: 768px) and (max-width: 900px) {
-  .sidebar { width: 60px; }
-  .sidebar-brand { justify-content: center; padding: 16px 0; }
-  .sidebar-brand-text,
-  .nav-item span,
-  .nav-section-label,
-  .sidebar-email { display: none; }
-  .nav-item { justify-content: center; padding: 10px; }
-  .sidebar-footer { padding: 14px 6px; }
-  .main-content { margin-left: 60px; }
+.app-shell.menu-open .sidebar {
+  transform: none;
+  visibility: visible;
+  transition: transform .25s ease, visibility 0s;
 }
 
-/* Celular: sidebar oculto, todo el ancho para el contenido */
-@media (max-width: 767px) {
-  .sidebar { display: none; }
-  .main-content { margin-left: 0; padding: 0; }
+/* Botón cerrar dentro del menú (solo se ve en modo cajón) */
+.sidebar-close {
+  display: none;
+  margin-left: auto;
+  border: none; background: none; color: #6b7280;
+  padding: 8px; border-radius: 8px; cursor: pointer;
+  align-items: center; justify-content: center;
 }
+.sidebar-close:hover { background: #f3f4f6; color: #111827; }
+
+/* Fondo oscuro del cajón (por encima del AppBar de MUI, que usa 1100) */
+.sidebar-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(17, 24, 39, .45);
+  z-index: 1200;
+}
+
+/* Barra superior con el botón ☰ (siempre visible) */
+.app-topbar {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; gap: 10px;
+  min-height: var(--topbar-h);
+  padding: env(safe-area-inset-top, 0px) 28px 0;
+  background: #f5f6fa;
+}
+.menu-toggle {
+  width: 40px; height: 40px; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 8px;
+  color: #374151; cursor: pointer;
+  transition: border-color .15s, color .15s;
+}
+.menu-toggle:hover { border-color: #1a56db; color: #1a56db; }
+.menu-toggle:focus-visible,
+.sidebar-close:focus-visible { outline: 2px solid #1a56db; outline-offset: 2px; }
+.app-topbar-title { display: none; font-size: 14px; font-weight: 600; color: #111827; }
+
+.main-body { padding: 8px 28px 28px; }
+
+@media (min-width: 1024px) {
+  .app-shell.menu-open .main-content { margin-left: 220px; }
+  .app-shell:not(.menu-open) .app-topbar-title { display: block; }
+}
+
+@media (max-width: 1023px) {
+  .sidebar { width: min(280px, 86vw); }
+  .app-shell.menu-open .sidebar { box-shadow: 8px 0 32px rgba(0, 0, 0, .18); }
+  .app-shell.menu-open .sidebar-overlay { display: block; }
+  .sidebar-close { display: inline-flex; }
+  .app-topbar-title { display: block; }
+  .nav-item { min-height: 44px; }
+}
+
+@media (max-width: 767px) {
+  .app-topbar { padding-left: 12px; padding-right: 12px; }
+  .main-body { padding: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar, .main-content { transition: none; }
+}
+
+/* =====================================================================
+   RESPONSIVE GLOBAL — vistas con className="page"
+   (Ventas, Egresos, Clientes, Productos y cualquier vista nueva que use
+   las mismas clases: header, kpi-row, form-card, fields-row, table-card,
+   charts-row, modal…). No hay que tocar cada vista.
+   ===================================================================== */
+
+/* --- Ventas: contenedor Meta + Balance (viene con style inline en el JSX) --- */
+.page > div[style*="flex-wrap"] { margin-bottom: 18px; }
+.page > div[style*="flex-wrap"] > .meta-row { margin-bottom: 0; }
+
+/* --- Tablas: nunca rompen el diseño, hacen scroll lateral si no caben --- */
+.table-card > div:not(.table-head) { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.table-card table { min-width: 600px; }
+.table-card td { vertical-align: middle; }
+.table-card .pill { white-space: nowrap; }
+
+/* --- Tablet (≤1023px) --- */
+@media (max-width: 1023px) {
+  .kpi-row { gap: 10px; }
+  .table-head { flex-wrap: wrap; gap: 8px; }
+}
+
+/* --- Tablet vertical y celular (≤767px) --- */
+@media (max-width: 767px) {
+  .page {
+    max-width: none;
+    padding: 12px 12px calc(24px + env(safe-area-inset-bottom, 0px));
+  }
+  .header { margin-bottom: 16px; }
+
+  /* Evita el zoom automático de iOS al tocar un campo */
+  .page input,
+  .page select { font-size: 16px; }
+  .table-actions input[type="text"] { font-size: 16px !important; }
+
+  /* Tarjetas más compactas */
+  .meta-row, .kpi, .progress-strip, .filtro-fecha-card { padding: 12px 14px; }
+  .form-card { padding: 16px; border-radius: 12px; }
+  .chart-card { padding: 16px; }
+  .proy-card { padding: 14px 16px; }
+  .meta-row, .progress-strip, .form-card, .filtro-fecha-card,
+  .table-card, .proy-card { margin-bottom: 14px; }
+  .page > div[style*="flex-wrap"] { margin-bottom: 14px; gap: 12px !important; }
+
+  /* Meta diaria: el campo ocupa el espacio libre */
+  .meta-row { gap: 10px; }
+  .meta-row input { flex: 1 1 80px; width: auto; min-width: 0; }
+  .btn-set { min-height: 40px; }
+
+  /* KPIs: 2 columnas (si son 3, el último ocupa todo el ancho) */
+  .kpi-row, .kpi-row.tres { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px; }
+  .kpi-row.tres .kpi:last-child { grid-column: 1 / -1; }
+  .kpi-value { font-size: 20px; }
+
+  /* Filtro de período */
+  .filtro-fecha-top { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .periodo-chip { min-height: 36px; padding: 6px 14px; }
+  .rango-custom.visible { display: grid; grid-template-columns: auto 1fr; gap: 8px 10px; align-items: center; }
+  .rango-sep { display: none; }
+  .rango-custom input[type="date"] { width: 100%; min-height: 40px; }
+  .btn-aplicar-rango { grid-column: 1 / -1; justify-content: center; min-height: 42px; }
+
+  /* Proyectos / filtros (Egresos) */
+  .filtro-chip { min-height: 34px; padding: 6px 14px; }
+  .proy-add-row .btn-proy-add { min-height: 38px; }
+
+  /* Botones de selección (servicio, categoría, estado): se acomodan solos */
+  .serv-grid,
+  .cat-grid,
+  .modal-cat-grid { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
+  .serv-btn, .cat-btn { min-height: 64px; }
+
+  /* Formularios: 2 columnas, el primer campo a todo el ancho */
+  .fields-row { grid-template-columns: 1fr 1fr; }
+  .fields-row > .field:first-child { grid-column: 1 / -1; max-width: none !important; }
+  .fields-row > .field:last-of-type:nth-of-type(even) { grid-column: 1 / -1; }
+  .fields-row .btn-add { grid-column: 1 / -1; width: 100%; height: 46px; }
+  .field input, .field select { min-height: 42px; }
+
+  /* Cabecera de tabla (y buscador de Productos) */
+  .table-head { padding: 12px 16px; }
+  .table-actions { flex-wrap: wrap; }
+  .table-actions > div { flex: 1 1 160px; }
+  .table-actions input[type="text"] { width: 100% !important; }
+
+  /* Botones editar / eliminar fáciles de tocar */
+  .btn-del, .btn-edit { padding: 9px 11px; font-size: 17px; }
+
+  /* Gráficos en una columna */
+  .charts-row { grid-template-columns: 1fr; gap: 14px; }
+  .chart-wrap { height: 220px; }
+
+  /* Modales */
+  .modal-overlay { padding: 12px; }
+  .modal { padding: 20px; }
+  .modal-btns .btn-cancel, .modal-btns .btn-save { min-height: 42px; }
+}
+
+/* Modales con estilos inline (Ventas y Productos): servicios en 3 columnas siempre */
+.form-card[style*="max-width"] .serv-grid { grid-template-columns: repeat(3, 1fr); }
+
+/* --- Celular muy angosto (≤359px) --- */
+@media (max-width: 359px) {
+  .fields-row { grid-template-columns: 1fr; }
+  .brand p { display: none; }
+}
+
+/* =====================================================================
+   COTIZACIONES dentro del Layout (topbar con ☰ arriba, sin scroll doble)
+   ===================================================================== */
+.main-body .app-root {
+  padding: 0;
+  min-height: 0;
+  display: block;
+  background: transparent;
+}
+.main-body .app {
+  max-width: none;
+  height: calc(100vh - var(--topbar-h) - 36px);
+  height: calc(100dvh - var(--topbar-h) - 36px);
+  min-height: 560px;
+}
+@media (max-width: 767px) {
+  .main-body .app {
+    height: calc(100vh - var(--topbar-h));
+    height: calc(100dvh - var(--topbar-h) - env(safe-area-inset-top, 0px));
+    min-height: 0;
+    border-radius: 0;
+  }
+}
+
+/* =====================================================================
+   CONTRASEÑAS (Material UI): el AppBar se pega debajo del botón ☰
+   ===================================================================== */
+.main-body .MuiAppBar-root { top: calc(var(--topbar-h) + env(safe-area-inset-top, 0px)); }
+.main-body > .MuiBox-root { min-height: calc(100dvh - var(--topbar-h)) !important; }

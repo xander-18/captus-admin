@@ -1,6 +1,9 @@
 export const IGV = 0.18;
 export const neto = (v) => +(v / (1 + IGV)).toFixed(2);
 
+// `incluye` (opcional): contenido interno de un producto, como [cantidad, "texto"].
+// El PDF lo muestra en el bloque "Incluye:" en lugar de repetir el nombre del producto.
+// Si el producto está en un kit con qty > 1, la cantidad se multiplica.
 export const CATALOGO = {
   equipos: [
     // --- CACI / detección ---
@@ -35,33 +38,62 @@ export const CATALOGO = {
     },
 
     // --- SHOCTIX ---
-    { id: "sx-rf3s", name: "KIT SHOCTIX RF3 SMART (fuente + pulsador 100m)", costo: 148.35, precio: 269.31, marca: "SHOCTIX" },
-    // { id: "sx-rf3l", name: "KIT SHOCTIX RF3 LITE (fuente + pulsador 100m)", costo: 112.1, precio: 178.58, marca: "SHOCTIX" },
-    { id: "sx-txvoz", name: "TX VOZ (con fuente)", costo: 111.99, precio: 167.83, marca: "SHOCTIX" },
-    { id: "sx-doble", name: "SHOCTIX ALERT PRO SMART DOBLE (panel + pulsador)", costo: 227.49, precio: 364.86, marca: "SHOCTIX" },
-    { id: "sx-triple", name: "SHOCTIX ALERT PRO TRIPLE (panel + pulsador)", costo: 262.49, precio: 465.72, marca: "SHOCTIX" },
-    { id: "sx-4glite", name: "SHOCTIX ALERT PRO 4G LITE (panel + pulsador)", costo: 559.99, precio: 900.72, marca: "SHOCTIX" },
-    { id: "sx-4gnet", name: "SHOCTIX ALERT PRO 4G NET (panel + pulsador)", costo: 874.99, precio: 1390.73, marca: "SHOCTIX" },
+    {
+      id: "sx-rf3s", name: "KIT SHOCTIX RF3 SMART (Fuente 12V2A + PULSADOR RF 100m)", costo: 150.00, precio: 249.00, marca: "SHOCTIX",
+      incluye: [[1, "Fuente 12V 2A"], [1, "Pulsador RF 100m"]]
+    },
+    {
+      id: "sx-txvoz", name: "TX VOZ (NO INCLUYE FUENTE)", costo: 125.00, precio: 210.85, marca: "SHOCTIX",
+      incluye: [] // no trae nada adentro: no se dibuja "Incluye:"
+    },
+    {
+      id: "sx-doble", name: "SHOCTIX ALERT PRO SMART DOBLE (panel + pulsador)", costo: 227.49, precio: 364.86, marca: "SHOCTIX",
+      incluye: [[1, "Panel SHOCTIX ALERT PRO SMART DOBLE"], [1, "Pulsador"]]
+    },
+    {
+      id: "sx-triple", name: "SHOCTIX ALERT PRO TRIPLE (panel + pulsador)", costo: 262.49, precio: 465.72, marca: "SHOCTIX",
+      incluye: [[1, "Panel SHOCTIX ALERT PRO TRIPLE"], [1, "Pulsador"]]
+    },
+    {
+      id: "sx-4glite", name: "SHOCTIX ALERT PRO 4G LITE (panel + pulsador)", costo: 559.99, precio: 900.72, marca: "SHOCTIX",
+      incluye: [[1, "Panel SHOCTIX ALERT PRO 4G LITE"], [1, "Pulsador"]]
+    },
+    {
+      id: "sx-4gnet", name: "SHOCTIX ALERT PRO 4G NET (panel + pulsador)", costo: 874.99, precio: 1390.73, marca: "SHOCTIX",
+      incluye: [[1, "Panel SHOCTIX ALERT PRO 4G NET"], [1, "Pulsador"]]
+    },
 
     // --- HAGROY ---
     { id: "hg-mpr3", name: "HAGROY MPR3", costo: 144.55, precio: 202.98, marca: "HAGROY" },
     { id: "hg-alcom", name: "PANEL HAGROY ALCOM MAX 4G", costo: 937.51, precio: 1336.54, marca: "HAGROY" },
     {
       id: "hg-yanex", name: "KIT CERCO ELECTRICO YANEX 1600 HAGROY", costo: 244.26, precio: 430.0, marca: "HAGROY",
-      nota: "Incluye electrificador, sirena 30w, batería 4A, pulsador y letrero"
+      nota: "Incluye electrificador, sirena 30w, batería 4A, pulsador y letrero",
+      incluye: [
+        [1, "Electrificador YANEX 1600"], [1, "Sirena 30W"], [1, "Batería 4A"],
+        [1, "Pulsador"], [1, "Letrero de advertencia"],
+      ]
     },
 
     // --- IPVOZ (NUEVO) ---
-    { id: "ipvoz-wifi", name: "KIT IPVOZ WIFI 60W (fuente 2AMP)", costo: 200.09, precio: 363.25, marca: "IPVOZ" },
-    { id: "ipvoz-eth", name: "KIT IPVOZ ETHERNET 100W (fuente 2AMP)", costo: 500.25, precio: 908.14, marca: "IPVOZ" },
+    {
+      id: "ipvoz-wifi", name: "KIT IPVOZ WIFI 60W (Fuente de 2AMP)", costo: 200.09, precio: 363.25, marca: "IPVOZ",
+      incluye: [[1, "Fuente 12V 2A"]]
+    },
+    {
+      id: "ipvoz-eth", name: "KIT IPVOZ ETHERNET 100W (Fuente de 2AMP)", costo: 500.25, precio: 908.14, marca: "IPVOZ",
+      incluye: [[1, "Fuente 12V 2A"]]
+    },
 
     // --- Periféricos comunes ---
     { id: "bocina30", name: "BOCINA 30W", costo: 37.76, precio: 72.05 },
+    { id: "conectorDc", name: "CONECTOR DC", costo: 2.5, precio: 5.00 },
+    { id: "caja10pvc", name: "CAJA PASE 10x100 PVC", costo: 3.00, precio: 7.50 },
     { id: "sirena30", name: "SIRENA 30W", costo: 37.76, precio: 72.05 },
     { id: "bat4a", name: "BATERIA 4A", costo: 47.2, precio: 65.0 },
     { id: "fuente12", name: "FUENTE 12V 2AMP", costo: 14.4, precio: 23.22 },
-    { id: "puls500", name: "PULSADOR INALAMBRICO 500M", costo: 34.0, precio: 64.18 },
-    { id: "puls100", name: "PULSADOR INALAMBRICO 100M", costo: 17.5, precio: 37.17 },
+    { id: "puls500", name: "PULSADOR RF INALAMBRICO 500M", costo: 34.0, precio: 64.18 },
+    { id: "puls100", name: "PULSADOR RF INALAMBRICO 100M", costo: 17.5, precio: 37.17 },
     // { id: "puls-alam", name: "PULSADOR ALAMBRICO HIKVISION", costo: 9.44, precio: 15.22 },
     { id: "panico", name: "BOTON DE PANICO HIKVISION", costo: 5.31, precio: 9.64 },
     { id: "sensorpir", name: "SENSOR INALAMBRICO PIR HAGROY", costo: 105.0, precio: 105.0 },
@@ -69,49 +101,57 @@ export const CATALOGO = {
   ],
 
   accesorios: [
-    // --- Cableado / canalización ---
-    { id: "cat6", name: "CABLE VULCANIZADO CAT6 (m)", costo: 1.06, precio: 1.71, unidad: "m" },
-    { id: "caci4h", name: "CABLE 4 HILOS CACI (m)", costo: 1.7, precio: 4.2, unidad: "m" },
-    { id: "caja10", name: "CAJA PASE 10x100 EMT", costo: 5.9, precio: 9.2 },
-    { id: "tuberia", name: 'TUBERIA CONDUIT 1/2" EMT', costo: 10.0, precio: 18.15 },
-    { id: "tubo-corr", name: 'METRO DE TUBO CORRUGADO EMT 1/2" (m)', costo: 3.0, precio: 6.0, unidad: "m" },
-    { id: "curva", name: 'CURVA 1/2" EMT', costo: 3.0, precio: 8.0 },
-    { id: "canast-oct", name: "CANASTILLA / CAJA OCTOGONAL EMT", costo: 2.5, precio: 7.0 },
-    { id: "tapa-oct", name: "TAPA OCTOGONAL EMT", costo: 1.18, precio: 3.0 },
-    { id: "canast-rec", name: "CANASTILLA RECTANGULAR EMT", costo: 4.72, precio: 8.57 },
-    { id: "caja-mod", name: "CAJA MODULAR EMT", costo: 16.52, precio: 29.99 },
-    { id: "conector", name: 'CONECTOR 1/2" EMT', costo: 1.3, precio: 3.8 },
-    { id: "union", name: 'UNION 1/2" EMT', costo: 1.3, precio: 3.8 },
-    { id: "gancho", name: 'GANCHO 1/2" EMT', costo: 2.36, precio: 4.285 },
-    { id: "acc-inst", name: "ACCESORIOS DE INSTALACION", costo: 29.5, precio: 60.0 },
+    // --- Alarmas ---
+    { id: "conectorDc", name: "CONECTOR DC", costo: 2.5, precio: 5.00, marca: "Alarmas" },
+    { id: "caja10pvc", name: "CAJA PASE 10x100 PVC", costo: 3.00, precio: 7.50, marca: "Alarmas" },
+    { id: "cat6", name: "CABLE VULCANIZADO CAT6 (M)", costo: 1.06, precio: 1.71, unidad: "m", marca: "Alarmas" },
+    { id: "panico", name: "BOTON DE PANICO HIKVISION", costo: 5.31, precio: 9.64, marca: "Alarmas" },
+    { id: "fuente12", name: "FUENTE 12V 2AMP", costo: 14.4, precio: 23.22, marca: "Alarmas" },
+    { id: "puls500", name: "PULSADOR RF INALAMBRICO 500M", costo: 34.0, precio: 64.18, marca: "Alarmas" },
+    { id: "puls100", name: "PULSADOR RF INALAMBRICO 100M", costo: 17.5, precio: 37.17, marca: "Alarmas" },
+    { id: "sensorpir", name: "SENSOR INALAMBRICO PIR HAGROY", costo: 105.0, precio: 105.0, marca: "Alarmas" },
+    { id: "contactomag", name: "CONTACTO MAGNETICO INALAMBRICO PIR HAGROY", costo: 76.0, precio: 76.0, marca: "Alarmas" },
 
-    // --- Señalética fotoluminiscente (NUEVO) ---
-    { id: "senal-caci", name: "SEÑALETICA FOTOLUMINISCENTE - CACI", costo: 4.13, precio: 6.5 },
-    { id: "senal-estrobo", name: "SEÑALETICA FOTOLUMINISCENTE - ESTROBO", costo: 4.13, precio: 6.5 },
-    { id: "senal-manual", name: "SEÑALETICA FOTOLUMINISCENTE - ESTACION MANUAL", costo: 4.13, precio: 6.5 },
-    { id: "senal-humo", name: "SEÑALETICA FOTOLUMINISCENTE - DETECTOR DE HUMO", costo: 4.13, precio: 6.5 },
-    { id: "senal-temp", name: "SEÑALETICA FOTOLUMINISCENTE - DETECTOR DE TEMPERATURA", costo: 4.13, precio: 6.5 },
-
-    // --- Servicios (NUEVO) ---
-    { id: "transporte", name: "TRANSPORTE (servicio)", costo: 20.0, precio: 30.0 },
-    {
-      id: "mano-obra", name: "MANO DE OBRA (servicio)", costo: 1200.0, precio: 1200.0,
-      nota: "Varía según uso de soldadura o concreto; se emite recibo por honorarios"
-    },
-    { id: "cert-caci", name: "CERTIFICADO CACI (servicio)", costo: 60.0, precio: 90.0 },
+    // --- CACI ---
+    { id: "caci4h", name: "CABLE 4 HILOS CACI (m)", costo: 1.7, precio: 4.2, unidad: "m", marca: "CACI" },
+    { id: "caja10", name: "CAJA PASE 10x100 EMT", costo: 5.9, precio: 9.2, marca: "CACI" },
+    { id: "tuberia", name: 'TUBERIA CONDUIT 1/2" EMT', costo: 10.0, precio: 18.15, marca: "CACI" },
+    { id: "tubo-corr", name: 'METRO DE TUBO CORRUGADO EMT 1/2" (m)', costo: 3.0, precio: 6.0, unidad: "m", marca: "CACI" },
+    { id: "curva", name: 'CURVA 1/2" EMT', costo: 3.0, precio: 8.0, marca: "CACI" },
+    { id: "canast-oct", name: "CANASTILLA / CAJA OCTOGONAL EMT", costo: 2.5, precio: 7.0, marca: "CACI" },
+    { id: "tapa-oct", name: "TAPA OCTOGONAL EMT", costo: 1.18, precio: 3.0, marca: "CACI" },
+    { id: "canast-rec", name: "CANASTILLA RECTANGULAR EMT", costo: 4.72, precio: 8.57, marca: "CACI" },
+    { id: "caja-mod", name: "CAJA MODULAR EMT", costo: 16.52, precio: 29.99, marca: "CACI" },
+    { id: "conector", name: 'CONECTOR 1/2" EMT', costo: 1.3, precio: 3.8, marca: "CACI" },
+    { id: "union", name: 'UNION 1/2" EMT', costo: 1.3, precio: 3.8, marca: "CACI" },
+    { id: "gancho", name: 'GANCHO 1/2" EMT', costo: 2.36, precio: 4.285, marca: "CACI" },
+    { id: "acc-inst", name: "ACCESORIOS DE INSTALACION", costo: 29.5, precio: 60.0, marca: "CACI" },
+    { id: "senal-caci", name: "SEÑALETICA FOTOLUMINISCENTE - CACI", costo: 4.13, precio: 6.5, marca: "CACI" },
+    { id: "senal-estrobo", name: "SEÑALETICA FOTOLUMINISCENTE - ESTROBO", costo: 4.13, precio: 6.5, marca: "CACI" },
+    { id: "senal-manual", name: "SEÑALETICA FOTOLUMINISCENTE - ESTACION MANUAL", costo: 4.13, precio: 6.5, marca: "CACI" },
+    { id: "senal-humo", name: "SEÑALETICA FOTOLUMINISCENTE - DETECTOR DE HUMO", costo: 4.13, precio: 6.5, marca: "CACI" },
+    { id: "senal-temp", name: "SEÑALETICA FOTOLUMINISCENTE - DETECTOR DE TEMPERATURA", costo: 4.13, precio: 6.5, marca: "CACI" },
 
     // --- Cerco eléctrico ---
-    { id: "poste-t", name: 'POSTE TEMPLADOR 4 HILOS 1 1/2" x 1.2mm', costo: 17.34, precio: 32.0 },
-    { id: "poste-i", name: 'POSTE INTERMEDIO 4 HILOS 1 1/2" x 1.2mm', costo: 17.34, precio: 32.0 },
-    { id: "ais-t", name: "AISLADOR TEMPLADOR CUADRADO", costo: 1.47, precio: 2.7 },
-    { id: "ais-i", name: "AISLADOR INTERMEDIO", costo: 0.81, precio: 1.5 },
-    { id: "aro-s", name: "ARO SIMPLE (TEMPLADOR)", costo: 1.1, precio: 2.0 },
-    { id: "aro-d", name: "ARO DOBLE (INTERMEDIO)", costo: 1.3, precio: 2.5 },
-    { id: "abraz", name: "ABRAZADERA DE ENLACE C/ARANDELA 5/16", costo: 0.59, precio: 1.55 },
-    { id: "bujia", name: "CABLE BUJIA (m)", costo: 2.44, precio: 4.5, unidad: "m" },
-    { id: "galv16", name: "KILO ALAMBRE GALVANIZADO 16mm", costo: 12.29, precio: 23.0 },
-    { id: "acerado", name: "ALAMBRE ACERADO 2.5mm", costo: 12.46, precio: 23.5 },
-    { id: "letrero", name: "LETRERO DE ADVERTENCIA ESTANDAR", costo: 3.09, precio: 6.0 },
+    { id: "poste-t", name: 'POSTE TEMPLADOR 4 HILOS 1 1/2" x 1.2mm', costo: 17.34, precio: 32.0, marca: "Cerco eléctrico" },
+    { id: "poste-i", name: 'POSTE INTERMEDIO 4 HILOS 1 1/2" x 1.2mm', costo: 17.34, precio: 32.0, marca: "Cerco eléctrico" },
+    { id: "ais-t", name: "AISLADOR TEMPLADOR CUADRADO", costo: 1.47, precio: 2.7, marca: "Cerco eléctrico" },
+    { id: "ais-i", name: "AISLADOR INTERMEDIO", costo: 0.81, precio: 1.5, marca: "Cerco eléctrico" },
+    { id: "aro-s", name: "ARO SIMPLE (TEMPLADOR)", costo: 1.1, precio: 2.0, marca: "Cerco eléctrico" },
+    { id: "aro-d", name: "ARO DOBLE (INTERMEDIO)", costo: 1.3, precio: 2.5, marca: "Cerco eléctrico" },
+    { id: "abraz", name: "ABRAZADERA DE ENLACE C/ARANDELA 5/16", costo: 0.59, precio: 1.55, marca: "Cerco eléctrico" },
+    { id: "bujia", name: "CABLE BUJIA (m)", costo: 2.44, precio: 4.5, unidad: "m", marca: "Cerco eléctrico" },
+    { id: "galv16", name: "KILO ALAMBRE GALVANIZADO 16mm", costo: 12.29, precio: 23.0, marca: "Cerco eléctrico" },
+    { id: "acerado", name: "ALAMBRE ACERADO 2.5mm", costo: 12.46, precio: 23.5, marca: "Cerco eléctrico" },
+    { id: "letrero", name: "LETRERO DE ADVERTENCIA ESTANDAR", costo: 3.09, precio: 6.0, marca: "Cerco eléctrico" },
+
+    // --- Servicios ---
+    // { id: "transporte", name: "TRANSPORTE (servicio)", costo: 20.0, precio: 30.0, marca: "Servicios" },
+    // {
+    //   id: "mano-obra", name: "MANO DE OBRA (servicio)", costo: 1200.0, precio: 1200.0, marca: "Servicios",
+    //   nota: "Varía según uso de soldadura o concreto; se emite recibo por honorarios"
+    // },
+    // { id: "cert-caci", name: "CERTIFICADO CACI (servicio)", costo: 60.0, precio: 90.0, marca: "Servicios" },
   ],
 };
 
@@ -188,49 +228,50 @@ export const KITS = [
     categoria: "Alarmas / pánico",
     precioReferencia: 390,
     items: {
-      equipos: [{ pid: "sx-rf3s", qty: 1 }, { pid: "panico", qty: 1 }],
-      accesorios: [{ pid: "cat6", qty: 10 }, { pid: "caja10", qty: 1 }],
+      equipos: [
+        { pid: "sx-rf3s", qty: 1 },
+      ],
+      accesorios: [
+        // { pid: "cat6", qty: 10 },
+        { pid: "caja10pvc", qty: 1 },
+        { pid: "conectorDc", qty: 1 }
+      ],
     },
-    opcionales: { equipos: [
-      { pid: "fuente12", qty: 1 }, 
-      { pid: "puls100", qty: 1 },
-      { pid: "puls500", qty: 1 },
-      { pid: "sensorpir", qty: 1 },
-      { pid: "contactomag", qty: 1 }
-    ], 
-      accesorios: [] },
+    opcionales: {
+      equipos: [
+        { pid: "fuente12", qty: 1 },
+        { pid: "panico", qty: 1 },
+        { pid: "puls100", qty: 1 },
+        { pid: "puls500", qty: 1 },
+        { pid: "sensorpir", qty: 1 },
+        { pid: "contactomag", qty: 1 }
+      ],
+      accesorios: []
+    },
   },
-
-
-
-
-
-  
-  // {
-  //   id: "sx-rf3-lite",
-  //   name: "Kit SHOCTIX RF3 LITE",
-  //   categoria: "Alarmas / pánico",
-  //   precioReferencia: 199,
-  //   items: {
-  //     equipos: [{ pid: "sx-rf3l", qty: 1 }, { pid: "panico", qty: 1 }],
-  //     accesorios: [{ pid: "cat6", qty: 10 }, { pid: "caja10", qty: 1 }],
-  //   },
-  //   opcionales: { equipos: [{ pid: "fuente12", qty: 1 }], accesorios: [] },
-  // },
-  // --- IPVOZ (NUEVO: las dos alarmas solicitadas) ---
- 
   {
     id: "sx-txvoz",
     name: "Kit TX VOZ",
     categoria: "Alarmas / pánico",
     precioReferencia: 169,
-    items: { equipos: [{ pid: "sx-txvoz", qty: 1 }], accesorios: [] },
+    items: {
+      equipos: [
+        { pid: "sx-txvoz", qty: 1 }
+      ],
+      accesorios: []
+    },
     opcionales: {
-      equipos: [{ pid: "puls100", qty: 1 }, { pid: "puls-alam", qty: 1 }],
-      accesorios: [{ pid: "cat6", qty: 10 }],
+      equipos: [
+        { pid: "puls100", qty: 1 },
+        { pid: "fuente12", qty: 1 },
+      ],
+      accesorios: [
+        { pid: "caja10pvc", qty: 1 },
+        { pid: "cat6", qty: 10 },
+      ],
     },
   },
-   {
+  {
     id: "ipvoz-wifi",
     name: "Kit IPVOZ WiFi 60W",
     categoria: "Alarmas / pánico",
@@ -239,7 +280,19 @@ export const KITS = [
       equipos: [{ pid: "ipvoz-wifi", qty: 1 }],
       accesorios: [],
     },
-    opcionales: { equipos: [], accesorios: [{ pid: "cat6", qty: 10 }, { pid: "caja10", qty: 1 }] },
+    opcionales: {
+      equipos: [
+        { pid: "fuente12", qty: 1 },
+        { pid: "puls100", qty: 1 },
+        { pid: "puls500", qty: 1 },
+        { pid: "sensorpir", qty: 1 },
+        { pid: "contactomag", qty: 1 }
+      ],
+      accesorios: [
+        { pid: "caja10pvc", qty: 1 },
+        { pid: "cat6", qty: 10 },
+      ]
+    },
   },
   {
     id: "ipvoz-eth",
@@ -247,10 +300,23 @@ export const KITS = [
     categoria: "Alarmas / pánico",
     precioReferencia: 908,
     items: {
-      equipos: [{ pid: "ipvoz-eth", qty: 1 }],
+      equipos: [
+        { pid: "ipvoz-eth", qty: 1 }],
       accesorios: [],
     },
-    opcionales: { equipos: [], accesorios: [{ pid: "cat6", qty: 10 }, { pid: "caja10", qty: 1 }] },
+    opcionales: {
+      equipos: [
+        { pid: "fuente12", qty: 1 },
+        { pid: "puls100", qty: 1 },
+        { pid: "puls500", qty: 1 },
+        { pid: "sensorpir", qty: 1 },
+        { pid: "contactomag", qty: 1 }
+      ],
+      accesorios: [
+        { pid: "caja10pvc", qty: 1 },
+        { pid: "cat6", qty: 10 }
+      ]
+    },
   },
   {
     id: "sx-doble",
@@ -337,8 +403,6 @@ export const KITS = [
     opcionales: { equipos: [], accesorios: [] },
   },
 
-
-
   {
     id: "cerco-10",
     name: "Kit Cerco Eléctrico 10 m (Yanex 1600)",
@@ -360,7 +424,6 @@ export const KITS = [
   },
 ];
 
-
 const ADIC_CACI = [
   { pid: "humo-ad", qty: 1 },
   { pid: "temp-ad", qty: 1 },
@@ -375,14 +438,12 @@ const ADIC_ALARMA = [
   { pid: "panico", qty: 1 },
   { pid: "sensorpir", qty: 1 },
   { pid: "contactomag", qty: 1 },
-]; 
+];
 
 // ---------------------------------------------------------------------------
 // HELPERS
 // ---------------------------------------------------------------------------
 const buscar = (catalogo, cat, pid) => catalogo[cat].find((p) => p.id === pid);
-
-
 
 export function adicionalesDe(kit) {
   if (kit.adicionales) return kit.adicionales;
@@ -399,6 +460,7 @@ export function opcionalesDe(kit) {
     accesorios: kit.opcionales?.accesorios || [],
   };
 }
+
 /** Convierte las líneas de un kit al formato de items de la cotización. */
 export function kitAItems(kit, catalogo = CATALOGO, opcionalesElegidos = []) {
   const armar = (cat) => {

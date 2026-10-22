@@ -1,16 +1,22 @@
-// import { NavLink, useNavigate } from 'react-router-dom';
-// import { fechaDisplay } from '../hooks/useFechas';
-// import { useAuth } from '../context/AuthContext';
+import { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Calendar, FileText, Lock, LogOut, ShieldCheck } from 'lucide-react';
+import {
+  Calendar, LogOut, ShieldCheck, Menu, X,
+  TrendingDown, Users, Package, Lock, FileText,
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+
+// Desde 1024px el menú queda acoplado a la izquierda; por debajo es un cajón.
+const DESKTOP = '(min-width: 1024px)';
+const isDesktop = () => window.matchMedia(DESKTOP).matches;
+
 const NAV_ITEMS = [
-  // { to: '/',        icon: 'ti-cash',          label: 'Ventas' },
-  { to: '/egresos', icon: 'ti-trending-down',  label: 'Egresos' },
-  { to: '/clientes', icon: 'ti-users',         label: 'Clientes' },
-  { to: '/productos', icon: 'ti-package',       label: 'Productos' },
-  { to: '/passwords', icon: 'ti-lock', label: 'Contraseñas' },
-  { to: '/cotizaciones', icon: 'ti-file-text', label: 'Cotizaciones' },
+  // { to: '/', icon: Wallet, label: 'Ventas' },
+  { to: '/egresos',      icon: TrendingDown, label: 'Egresos' },
+  { to: '/clientes',     icon: Users,        label: 'Clientes' },
+  { to: '/productos',    icon: Package,      label: 'Productos' },
+  { to: '/passwords',    icon: Lock,         label: 'Contraseñas' },
+  { to: '/cotizaciones', icon: FileText,     label: 'Cotizaciones' },
 ];
 
 export default function Layout({ children }) {
@@ -18,14 +24,40 @@ export default function Layout({ children }) {
   const navigate = useNavigate();
   const today = new Date().toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' });
 
+  // open = menú visible. Abierto por defecto solo en escritorio.
+  const [open, setOpen] = useState(() => isDesktop());
+
+  // Al cruzar el breakpoint (girar tablet, redimensionar) se reajusta
+  useEffect(() => {
+    const mq = window.matchMedia(DESKTOP);
+    const onChange = e => setOpen(e.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+
+  // Cajón abierto en móvil/tablet: Escape lo cierra y se bloquea el scroll del fondo
+  useEffect(() => {
+    if (!open || isDesktop()) return;
+    const onKey = e => { if (e.key === 'Escape') setOpen(false); };
+    window.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
+  const closeIfDrawer = () => { if (!isDesktop()) setOpen(false); };
+
   async function handleLogout() {
     await logout();
     navigate('/login', { replace: true });
   }
 
   return (
-    <div className="app-shell">
-      <aside className="sidebar">
+    <div className={`app-shell${open ? ' menu-open' : ''}`}>
+      <aside id="app-sidebar" className="sidebar">
         <div className="sidebar-brand">
           <div className="sidebar-brand-icon">
             <ShieldCheck size={20} color="#fff" />
@@ -34,6 +66,14 @@ export default function Layout({ children }) {
             <h2>Captus</h2>
             <p>Panel interno</p>
           </div>
+          <button
+            type="button"
+            className="sidebar-close"
+            onClick={() => setOpen(false)}
+            aria-label="Cerrar menú"
+          >
+            <X size={18} />
+          </button>
         </div>
 
         <nav className="sidebar-nav">
@@ -42,6 +82,7 @@ export default function Layout({ children }) {
             <NavLink
               key={to}
               to={to}
+              onClick={closeIfDrawer}
               className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
             >
               <Icon size={18} />
@@ -65,8 +106,27 @@ export default function Layout({ children }) {
         </div>
       </aside>
 
+      {/* Fondo oscuro: solo visible con el cajón abierto en móvil/tablet */}
+      <div className="sidebar-overlay" onClick={() => setOpen(false)} />
+
       <main className="main-content">
-        {children}
+        <header className="app-topbar">
+          <button
+            type="button"
+            className="menu-toggle"
+            onClick={() => setOpen(o => !o)}
+            aria-label={open ? 'Ocultar menú' : 'Mostrar menú'}
+            aria-expanded={open}
+            aria-controls="app-sidebar"
+          >
+            <Menu size={20} />
+          </button>
+          <span className="app-topbar-title">Captus</span>
+        </header>
+
+        <div className="main-body">
+          {children}
+        </div>
       </main>
     </div>
   );

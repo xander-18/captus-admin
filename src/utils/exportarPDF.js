@@ -1,11 +1,26 @@
-// src/utils/exportarPDF.js
-// 4 plantillas sobre la misma membretada de CAPTUSTEC:
-//   simple -> EQUIPO (1 sección) + SUBTOTAL/IGV (si aplica) + TOTAL
-//   alarma -> KIT (precio fijo) + INCLUYE + ADICIONALES + TRANSPORTE + INSTALACIÓN + TOTAL
-//   caci   -> KIT + ADICIONALES + MATERIALES + SEÑALÉTICA + INSTALACIÓN/CONFIG + CERTIFICADO + TOTAL
-//   cerco  -> igual que caci (los bloques vacíos no se dibujan)
 import jsPDF from "jspdf";
-import membreteUrl from "../assets/membrete.png";
+import logoUrl from "../assets/logo.png";
+
+// ---------------------------------------------------------------------------
+// DATOS DE LA EMPRESA: edítalos aquí, no hay que tocar el resto del archivo.
+// ---------------------------------------------------------------------------
+const EMPRESA = {
+  nombre: "CAPTUS SOLUCIONES TECNOLÓGICAS S.A.C.",
+  lineas: [
+    "R.U.C. 20609689804",
+    "CAL. EL CARMEN NRO. 112 URB. NUEVA ESPERANZA",
+    "VILLA MARÍA DEL TRIUNFO - LIMA",
+    "ventas@captustec.com",
+  ],
+  vendedor: "Sergio Gómez Cuadros",
+  telefono: "934300161",
+  pie: "954135990   ·   (01) 7556748   ·   ventas@captustec.com   ·   Captustec",
+  banco: {
+    titular: "A nombre de: CAPTUS SOLUCIONES TECNOLÓGICAS SAC",
+    lineas: ["Cuenta Interbank: 200-3005505249", "CCI: 003-200-003005505249-39"],
+  },
+  validezDias: 5,
+};
 
 // La plantilla se deduce sola del kit cargado (nombre del kit + proyecto). Sin kit = equipo simple.
 // Si el kit trae `plantilla` en su patch ("alarma" | "caci" | "cerco"), se respeta.
@@ -21,14 +36,26 @@ export function plantillaDe(q) {
   return "simple";
 }
 
+// ---------------------------------------------------------------------------
+// MEDIDAS Y COLORES (mm). Colores tomados del logo.
+// ---------------------------------------------------------------------------
 const W = 210, H = 297;
-const X = { l: 22, cant: 34, prod: 124, unit: 157, r: 190 };
+const L = 15, R = 195;
+const COL = { n: 15, desc: 24, cant: 128, unit: 142, tot: 168 }; // bordes de columna; el último es R
 const FOOTER_SAFE_Y = 278;
-const Y_CONTINUACION = 42;
+const Y_CONTINUACION = 32;
 const IGV = 1.18;
+const C = {
+  azul: [16, 134, 191],
+  verde: [116, 175, 53],
+  caja: [238, 244, 232],
+  linea: [205, 210, 215],
+  gris: [90, 90, 90],
+};
 const n2 = (n) => (Number(n) || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+const f2 = (d) => d.toLocaleDateString("es-PE", { day: "2-digit", month: "2-digit", year: "numeric" });
 
-function cargarImagenBase64(url) {
+function cargarLogo(url) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = "anonymous";
@@ -36,7 +63,7 @@ function cargarImagenBase64(url) {
       const c = document.createElement("canvas");
       c.width = img.width; c.height = img.height;
       c.getContext("2d").drawImage(img, 0, 0);
-      resolve(c.toDataURL("image/png"));
+      resolve({ data: c.toDataURL("image/png"), ratio: img.width / img.height });
     };
     img.onerror = reject;
     img.src = url;
@@ -53,10 +80,15 @@ function nombreItem(item, cat, catalog) {
 // FILAS. Todo sale de lo que ya existe en la cotización:
 // Equipos principales, Accesorios, Mano de obra, Transporte y Certificado.
 // ---------------------------------------------------------------------------
+// Cada línea trae `incluye` si el producto del catálogo declara su contenido interno.
 const lineasDe = (quote, cat, catalog) =>
-  (quote.items[cat] || []).map((it) => ({
-    t: "item", qty: it.qty, nombre: nombreItem(it, cat, catalog), pu: it.precio, deKit: !!it.deKit,
-  }));
+  (quote.items[cat] || []).map((it) => {
+    const prod = (catalog[cat] || []).find((x) => x.id === it.pid);
+    return {
+      t: "item", qty: it.qty, nombre: nombreItem(it, cat, catalog), pu: it.precio,
+      deKit: !!it.deKit, incluye: prod?.incluye,
+    };
+  });
 // Kit = equipos que cargó el kit. Lo agregado después = adicionales. Sin marcas, todo es kit.
 const partirEquipos = (eq) => {
   const hayKit = eq.some((r) => r.deKit);
@@ -64,6 +96,12 @@ const partirEquipos = (eq) => {
 };
 const sumaFilas = (f) => f.reduce((a, r) => a + r.pu * r.qty, 0);
 const cant = (r) => `${String(r.qty).padStart(2, "0")} ${r.nombre}`;
+// Contenido del kit: si el producto declara `incluye`, se muestra eso (sin repetir el nombre del kit).
+// Si no lo declara, se muestra el producto tal cual.
+const detalleKit = (kit) =>
+  kit
+    .flatMap((r) => (r.incluye ? r.incluye.map(([q, n]) => ({ qty: q * r.qty, nombre: n })) : [r]))
+    .map(cant);
 const aprobado = (e) => e?.required && e?.approval === "approved" && e.value > 0;
 const manoDeObra = (q) => (q.laborApproval === "approved" ? q.laborValue || 0 : 0);
 const nombreKit = (q) => (q.proyecto || q.kitOrigen || "Kit").trim();
@@ -78,24 +116,11 @@ function extrasSueltos(quote, etiquetaMO, negrita) {
   return [...out, ...ajuste(quote, negrita)];
 }
 
-// EQUIPO simple: una sola sección con equipos y accesorios.
-function filasSimple(quote, summary, catalog) {
-  const f = quote.mostrarIgv ? 1 / IGV : 1; // con IGV desglosado, las líneas van en neto (como la 0451)
-  const neto = (r) => ({ ...r, pu: r.pu * f });
-  const rows = [
-    { t: "seccion", texto: "EQUIPO" },
-    ...[...lineasDe(quote, "equipos", catalog), ...lineasDe(quote, "accesorios", catalog)].map(neto),
-  ];
-  const extras = extrasSueltos(quote, "MANO DE OBRA", false).map(neto);
+// EQUIPO simple: equipos y accesorios en una sola lista. El IGV, si aplica, se desglosa debajo (como Shoctix).
+function filasSimple(quote, catalog) {
+  const rows = [...lineasDe(quote, "equipos", catalog), ...lineasDe(quote, "accesorios", catalog)];
+  const extras = extrasSueltos(quote, "MANO DE OBRA", false);
   if (extras.length) rows.push({ t: "vacio" }, ...extras);
-  if (quote.mostrarIgv) {
-    const subtotal = summary.ventaTotal / IGV;
-    rows.push(
-      { t: "vacio" },
-      { t: "resumen", etiqueta: "Subtotal", valor: subtotal },
-      { t: "resumen", etiqueta: "IGV", valor: summary.ventaTotal - subtotal }
-    );
-  }
   return rows;
 }
 
@@ -103,11 +128,14 @@ function filasSimple(quote, summary, catalog) {
 function filasAlarma(quote, catalog) {
   const { kit, adic } = partirEquipos(lineasDe(quote, "equipos", catalog));
   const rows = [{ t: "seccion", texto: "EQUIPOS ALARMA COMUNITARIA" }];
-  if (kit.length) rows.push(
-    { t: "item", qty: 1, nombre: nombreKit(quote), pu: sumaFilas(kit) },
-    { t: "incluye", texto: "Incluye:" },
-    ...kit.map((r) => ({ t: "incluye", texto: cant(r) }))
-  );
+  if (kit.length) {
+    const det = detalleKit(kit);
+    rows.push({ t: "item", qty: 1, nombre: nombreKit(quote), pu: sumaFilas(kit) });
+    if (det.length) rows.push(
+      { t: "incluye", texto: "Incluye:" },
+      ...det.map((texto) => ({ t: "incluye", texto }))
+    );
+  }
   rows.push(...adic, ...lineasDe(quote, "accesorios", catalog));
   const extras = extrasSueltos(quote, "INSTALACIÓN", true);
   if (extras.length) rows.push({ t: "vacio" }, ...extras);
@@ -131,7 +159,7 @@ function filasProyecto(quote, catalog, p) {
   const rows = [];
   if (kit.length) rows.push(
     { t: "item", qty: 1, nombre: nombreKit(quote).toUpperCase(), pu: sumaFilas(kit), bold: true },
-    ...kit.map((r) => ({ t: "detalle", texto: cant(r) }))
+    ...detalleKit(kit).map((texto) => ({ t: "detalle", texto }))
   );
   const bloque = (titulo, lista) => {
     if (!lista.length) return;
@@ -182,157 +210,284 @@ function condiciones(quote, p) {
 }
 
 // ---------------------------------------------------------------------------
-// DIBUJO. Se genera normal; si pasa de 1 hoja, se regenera en modo compacto.
+// DIBUJO
 // ---------------------------------------------------------------------------
-const TAM = (c) => (c ? { fs: 8, fsInc: 7.5, lh: 3.8, vacio: 2, pad: 0.6 } : { fs: 9, fsInc: 8.5, lh: 4.6, vacio: 3, pad: 1 });
+const numeroDe = (q) => q.numero || q.id.slice(-4);
 
-function dibujarTabla(doc, rows, total, etiquetaTotal, y0, membrete, t) {
-  let y = y0, top = y0;
+// Cabecera de la primera hoja: logo + datos de la empresa + caja con el número.
+function dibujarEncabezado(doc, logo, quote) {
+  const lw = 50, lh = lw / logo.ratio, yTop = 9;
+  doc.addImage(logo.data, "PNG", L, yTop, lw, lh);
+
+  // Datos de la empresa, a la derecha del logo
+  const xe = L + lw + 5, xCaja = 142, we = xCaja - xe - 4, alto = 3.7;
+  doc.setLineHeightFactor(1.2);
+  let ye = 13;
+  [[EMPRESA.nombre, true], ...EMPRESA.lineas.map((s) => [s, false])].forEach(([txt, bold]) => {
+    doc.setFont("helvetica", bold ? "bold" : "normal");
+    doc.setFontSize(bold ? 8.5 : 8);
+    doc.setTextColor(...(bold ? [0, 0, 0] : C.gris));
+    const ls = doc.splitTextToSize(txt, we);
+    doc.text(ls, xe, ye);
+    ye += ls.length * alto;
+  });
+
+  // Caja "COTIZACIÓN Nº"
+  const num = String(numeroDe(quote));
+  doc.setFillColor(...C.caja);
+  doc.setDrawColor(...C.gris); doc.setLineWidth(0.3);
+  doc.rect(xCaja, 10, R - xCaja, 26, "FD");
+  doc.setTextColor(0);
+  doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+  doc.text("COTIZACIÓN Nº", (xCaja + R) / 2, 18, { align: "center" });
+  doc.setFontSize(num.length > 8 ? 14 : 18); // "0476-2026" (9 caracteres) entra a 14 pt
+  doc.text(num, (xCaja + R) / 2, 29, { align: "center" });
+
+  const yFin = Math.max(yTop + lh, ye, 36) + 3;
+  doc.setDrawColor(...C.verde); doc.setLineWidth(0.7);
+  doc.line(L, yFin, R, yFin);
+  doc.setLineWidth(0.2);
+  return yFin + 7;
+}
+
+// Cabecera reducida para las hojas siguientes.
+function dibujarMini(doc, logo, quote) {
+  const w = 30;
+  doc.addImage(logo.data, "PNG", L, 8, w, w / logo.ratio);
+  doc.setTextColor(0); doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+  doc.text("COTIZACIÓN N° " + numeroDe(quote), R, 17, { align: "right" });
+  doc.setDrawColor(...C.verde); doc.setLineWidth(0.7);
+  doc.line(L, 24, R, 24);
+  doc.setLineWidth(0.2);
+}
+
+// Cliente (izquierda) y detalles (derecha). Los textos largos se parten en varias líneas:
+// una dirección larga ya no se sale de la hoja.
+function dibujarDatos(doc, quote, y0) {
+  const fs = 9, lh = fs * 1.2 * 0.3528;
+  doc.setLineHeightFactor(1.2);
+  doc.setFontSize(fs);
+
+  const emision = new Date(quote.fecha);
+  const valida = new Date(emision);
+  valida.setDate(valida.getDate() + EMPRESA.validezDias);
+
+  const nro = (quote.ruc || "").trim();
+  const izq = [["Cliente:", (quote.cliente || "").trim() || "—"]];
+  if (nro) izq.push([nro.length === 8 ? "DNI:" : "RUC:", nro]);
+  if (quote.direccion?.trim()) izq.push(["Dirección:", quote.direccion.trim()]);
+  if (quote.atencion?.trim()) izq.push(["Atención:", quote.atencion.trim()]);
+  const der = [
+    ["Fecha emisión:", f2(emision)],
+    ["Válida hasta:", f2(valida)],
+    ["Vendedor:", EMPRESA.vendedor],
+    ["Teléfono:", EMPRESA.telefono],
+  ];
+
+  const bloque = (filas, xl, xv, ancho) => {
+    let y = y0;
+    filas.forEach(([lab, val]) => {
+      doc.setFont("helvetica", "bold"); doc.text(lab, xl, y);
+      doc.setFont("helvetica", "normal");
+      const ls = doc.splitTextToSize(String(val), ancho);
+      doc.text(ls, xv, y);
+      y += ls.length * lh + 1.4;
+    });
+    return y;
+  };
+
+  doc.setTextColor(0);
+  const yi = bloque(izq, L, L + 22, 128 - (L + 22) - 3);
+  const yd = bloque(der, 134, 134 + 24, R - (134 + 24));
+  return Math.max(yi, yd) + 4;
+}
+
+const TAM = (c) => (c ? { fs: 8, fsInc: 7.5, lh: 3.8, vacio: 2, pad: 0.5 } : { fs: 9, fsInc: 8.5, lh: 4.6, vacio: 3, pad: 0.8 });
+
+function dibujarTabla(doc, rows, total, conIgv, y0, logo, quote, t) {
+  let y = y0, n = 0;
   doc.setLineHeightFactor(t.lh / (t.fs * 0.3528));
 
-  const borde = () => {
-    doc.setDrawColor(0); doc.setLineWidth(0.2);
-    doc.rect(X.l, top, X.r - X.l, y - top);
-    [X.cant, X.prod, X.unit].forEach((x) => doc.line(x, top, x, y));
-  };
   const cabecera = () => {
-    doc.setFont("helvetica", "normal"); doc.setFontSize(t.fs); doc.setTextColor(0);
-    const ty = y + 4.2;
-    doc.text("CANT", (X.l + X.cant) / 2, ty, { align: "center" });
-    doc.text("PRODUCTO", (X.cant + X.prod) / 2, ty, { align: "center" });
-    doc.text("COSTO UNITARIO", (X.prod + X.unit) / 2, ty, { align: "center" });
-    doc.text("COSTOS TOTAL", (X.unit + X.r) / 2, ty, { align: "center" });
-    y += 6; doc.line(X.l, y, X.r, y);
+    doc.setFillColor(...C.azul);
+    doc.rect(L, y, R - L, 7, "F");
+    doc.setFont("helvetica", "bold"); doc.setFontSize(8.5); doc.setTextColor(255);
+    const ty = y + 4.7;
+    doc.text("N°", (COL.n + COL.desc) / 2, ty, { align: "center" });
+    doc.text("DESCRIPCIÓN", (COL.desc + COL.cant) / 2, ty, { align: "center" });
+    doc.text("CANT.", (COL.cant + COL.unit) / 2, ty, { align: "center" });
+    doc.text("P. UNIT. (S/)", (COL.unit + COL.tot) / 2, ty, { align: "center" });
+    doc.text("TOTAL (S/)", (COL.tot + R) / 2, ty, { align: "center" });
+    doc.setTextColor(0);
+    y += 7;
   };
   const pagina = () => {
-    borde();
     doc.addPage();
-    doc.addImage(membrete, "PNG", 0, 0, W, H);
-    y = Y_CONTINUACION; top = y;
+    dibujarMini(doc, logo, quote);
+    y = Y_CONTINUACION;
     cabecera();
   };
   const fuente = (r) => {
-    const negrita = r.bold || r.t === "seccion" || r.t === "resumen";
+    const negrita = r.bold || r.t === "seccion";
     doc.setFont("helvetica", negrita ? "bold" : r.t === "incluye" ? "italic" : "normal");
     doc.setFontSize(r.t === "incluye" ? t.fsInc : t.fs);
+    doc.setTextColor(r.t === "incluye" || r.t === "detalle" ? 70 : 0);
+  };
+  const linea = () => {
+    doc.setDrawColor(...C.linea); doc.setLineWidth(0.2);
+    doc.line(L, y, R, y);
   };
 
   cabecera();
-  y += 2;
 
-  rows.forEach((r) => {
+  rows.forEach((r, i) => {
     if (r.t === "vacio") { y += t.vacio; return; }
-    const sangria = r.sangria ?? (r.t === "incluye" ? 5 : 0);
+    const sangria = r.sangria ?? (r.t === "incluye" ? 5 : r.t === "detalle" ? 3 : 0);
     fuente(r);
-    const ls = r.t === "resumen" ? [r.etiqueta] : doc.splitTextToSize(r.texto ?? r.nombre, X.prod - X.cant - 4 - sangria);
-    const h = ls.length * t.lh + t.pad;
-    if (y + h > FOOTER_SAFE_Y - 10) { pagina(); y += 2; fuente(r); }
+    const ls = doc.splitTextToSize(r.texto ?? r.nombre, COL.cant - COL.desc - 4 - sangria);
+    const h = ls.length * t.lh + t.pad * 2;
+    if (y + h > FOOTER_SAFE_Y - 10) { pagina(); fuente(r); }
 
-    const by = y + t.lh * 0.78;
-    if (r.t === "resumen") {
-      doc.text(r.etiqueta, X.unit - 3, by, { align: "right" });
-      doc.text(n2(r.valor), X.r - 3, by, { align: "right" });
-    } else {
-      if (r.qty != null) doc.text(String(r.qty).padStart(2, "0"), (X.l + X.cant) / 2, by, { align: "center" });
-      doc.text(ls, X.cant + 2 + sangria, by);
-      if (r.pu != null) {
-        doc.text(n2(r.pu), X.unit - 3, by, { align: "right" });
-        doc.text(n2(r.pu * r.qty), X.r - 3, by, { align: "right" });
-      }
-      if (r.valor != null) doc.text(n2(r.valor), X.r - 3, by, { align: "right" });
+    const by = y + t.pad + t.lh * 0.78;
+    if (r.t === "item") {
+      n += 1;
+      doc.text(String(n), (COL.n + COL.desc) / 2, by, { align: "center" });
+      doc.text(String(r.qty), (COL.cant + COL.unit) / 2, by, { align: "center" });
     }
+    doc.text(ls, COL.desc + 2 + sangria, by);
+    if (r.pu != null) {
+      doc.text(n2(r.pu), COL.tot - 2, by, { align: "right" });
+      doc.text(n2(r.pu * r.qty), R - 2, by, { align: "right" });
+    }
+    if (r.valor != null) doc.text(n2(r.valor), R - 2, by, { align: "right" });
     y += h;
+
+    // Línea fina entre filas; el detalle de un ítem queda pegado a su ítem.
+    const sig = rows[i + 1];
+    const pegado = sig && (sig.t === "incluye" || sig.t === "detalle");
+    if (!pegado && r.t !== "seccion") linea();
   });
 
-  // TOTAL: siempre
-  y += 2;
-  if (y + 8 > FOOTER_SAFE_Y) pagina();
-  doc.setFillColor(255, 242, 0);
-  doc.rect(X.unit, y, X.r - X.unit, 8, "F");
-  doc.setDrawColor(0); doc.line(X.l, y, X.r, y);
-  doc.setFont("helvetica", "bold"); doc.setFontSize(10);
-  doc.text(etiquetaTotal, X.unit - 3, y + 5.5, { align: "right" });
-  doc.text("S/. " + n2(total), X.r - 3, y + 5.5, { align: "right" });
-  y += 8;
-  borde();
-  return y;
+  // Cierre de la tabla + totales (siempre)
+  linea();
+  y += 4;
+  if (y + (conIgv ? 11 : 0) + 9 > FOOTER_SAFE_Y) { pagina(); y += 2; }
+
+  doc.setTextColor(0);
+  const xEt = COL.tot - 5;
+  if (conIgv) {
+    const sub = total / IGV;
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+    [["Subtotal sin IGV", sub], ["IGV (18%)", total - sub]].forEach(([et, v]) => {
+      doc.text(et, xEt, y + 3.5, { align: "right" });
+      doc.text("S/ " + n2(v), R - 2, y + 3.5, { align: "right" });
+      y += 5.5;
+    });
+    y += 1;
+  }
+  doc.setFillColor(...C.azul);
+  doc.rect(COL.cant - 8, y, R - (COL.cant - 8), 9, "F");
+  doc.setTextColor(255); doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+  doc.text("TOTAL", xEt, y + 6.2, { align: "right" });
+  doc.text("S/ " + n2(total), R - 3, y + 6.2, { align: "right" });
+  doc.setTextColor(0);
+  return y + 9;
 }
 
-function dibujarCierre(doc, y, membrete, quote, p, c) {
-  const k = c ? { a: 4, b: 3.5, g: 5, t: 4, l: 3.4, fs: 8, fc: 7.5 } : { a: 5, b: 4, g: 9, t: 5, l: 4, fs: 9, fc: 8.5 };
+// Términos y condiciones + cuenta bancaria (caja, como en la referencia de Best Security).
+function dibujarCierre(doc, y, logo, quote, p, c) {
+  const k = c ? { fs: 8, fc: 7.5, l: 3.5, g: 4, t: 4 } : { fs: 9, fc: 8.5, l: 4.2, g: 6, t: 5 };
   doc.setFont("helvetica", "normal"); doc.setFontSize(k.fc);
-  const conds = condiciones(quote, p).flatMap((s) => doc.splitTextToSize(s, 168));
-  const alto = k.a + k.b + k.g + k.t + conds.length * k.l + k.g + k.t + 3 * k.l + 4;
+  const conds = condiciones(quote, p).flatMap((s) => doc.splitTextToSize("-  " + s, R - L - 2));
+  const bancoLineas = [EMPRESA.banco.titular, ...EMPRESA.banco.lineas];
+  const altoBanco = 3 + k.t + bancoLineas.length * k.l + 2;
+  const alto = k.t + conds.length * k.l + k.g + altoBanco;
 
   y += c ? 5 : 8;
-  if (y > FOOTER_SAFE_Y - alto) { doc.addPage(); doc.addImage(membrete, "PNG", 0, 0, W, H); y = Y_CONTINUACION; }
-  const L = X.l;
+  if (y + alto > FOOTER_SAFE_Y) { doc.addPage(); dibujarMini(doc, logo, quote); y = Y_CONTINUACION; }
+
   doc.setTextColor(0);
-
-  doc.setFontSize(k.fs);
-  doc.text("ATENTAMENTE,", L, y); y += k.a;
-  doc.setFont("helvetica", "bold"); doc.text("Sergio Gómez Cuadros", L, y); y += k.b;
-  doc.setFont("helvetica", "normal"); doc.text("CAPTUSTEC SAC  —  934300161", L, y); y += k.g;
-
-  doc.setFont("helvetica", "bold"); doc.text("CONDICIONES DE LA VENTA", L, y); y += k.t;
+  doc.setFont("helvetica", "bold"); doc.setFontSize(k.fs);
+  doc.text("TÉRMINOS Y CONDICIONES", L, y); y += k.t;
   doc.setFont("helvetica", "normal"); doc.setFontSize(k.fc);
   conds.forEach((s) => { doc.text(s, L, y); y += k.l; });
-  y += k.g - 4;
+  y += k.g - k.l + 1;
 
-  doc.setFontSize(k.fs); doc.setFont("helvetica", "bold"); doc.text("CUENTA BANCARIA", L, y); y += k.t;
+  doc.setFillColor(...C.caja);
+  doc.setDrawColor(...C.linea); doc.setLineWidth(0.3);
+  doc.rect(L, y, R - L, altoBanco, "FD");
+  let yy = y + 3 + 3.2;
+  doc.setFont("helvetica", "bold"); doc.setFontSize(k.fs);
+  doc.text("CUENTA BANCARIA", L + 3, yy); yy += k.t;
   doc.setFont("helvetica", "normal"); doc.setFontSize(k.fc);
-  doc.text("A nombre de: CAPTUS SOLUCIONES TECNOLÓGICAS SAC", L, y); y += k.l;
-  doc.text("Cuenta Interbank: 200-3005505249", L, y); y += k.l;
-  doc.text("CCI: 003-200-003005505249-39", L, y);
+  bancoLineas.forEach((s) => { doc.text(s, L + 3, yy); yy += k.l; });
 }
 
-function construir(quote, summary, catalog, membrete, compacto) {
+// Pie en todas las hojas: contacto y numeración.
+function dibujarPies(doc) {
+  const total = doc.getNumberOfPages();
+  for (let i = 1; i <= total; i++) {
+    doc.setPage(i);
+    doc.setDrawColor(...C.linea); doc.setLineWidth(0.2);
+    doc.line(L, 284, R, 284);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(...C.gris);
+    doc.text(EMPRESA.pie, W / 2, 289, { align: "center" });
+    doc.text(`Página ${i} de ${total}`, W / 2, 293, { align: "center" });
+  }
+  doc.setTextColor(0);
+}
+
+function construir(quote, summary, catalog, logo, compacto) {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const p = plantillaDe(quote);
+  doc.setProperties({ title: nombreArchivoPDF(quote).replace(/\.pdf$/i, "") });
 
-  doc.addImage(membrete, "PNG", 0, 0, W, H);
-  doc.setTextColor(0);
-  doc.setFont("helvetica", "bold"); doc.setFontSize(11);
-  doc.text("COTIZACIÓN N° " + (quote.numero || quote.id.slice(-4)), X.l, 20);
-  doc.setFont("helvetica", "normal"); doc.setFontSize(10);
-  const fecha = new Date(quote.fecha).toLocaleDateString("es-PE", { day: "2-digit", month: "long", year: "numeric" });
-  doc.text("Lima, " + fecha, X.l, 26);
+  let y = dibujarEncabezado(doc, logo, quote);
+  y = dibujarDatos(doc, quote, y);
 
-  let y = 36;
-  const conRuc = !!quote.ruc?.trim();
-  doc.setFont("helvetica", "bold");
-  doc.text("Señor(es):" + (conRuc && quote.cliente ? " " + quote.cliente : ""), X.l, y); y += 5;
-  if (conRuc) { doc.text("RUC: " + quote.ruc.trim(), X.l, y); y += 5; }
-  if (quote.atencion || !conRuc) { doc.text("ATENCIÓN: " + (quote.atencion || quote.cliente || "—"), X.l, y); y += 5; }
-  doc.setFont("helvetica", "normal");
-  if (quote.direccion) { doc.text("DIRECCIÓN: " + quote.direccion, X.l, y); y += 5; }
-  y += 3;
-  doc.text("Estimados señores:", X.l, y); y += 5;
-  doc.setFontSize(9);
-  const objeto = p === "caci" || p === "cerco" ? "nuestra cotización" : "nuestros productos";
-  doc.text(`Reciba un cordial saludo, nos dirigimos a usted para presentar ${objeto} según nuestra lista de precios.`, X.l, y, { maxWidth: X.r - X.l });
-  y += 9;
-
-  const rows = p === "simple" ? filasSimple(quote, summary, catalog)
+  const rows = p === "simple" ? filasSimple(quote, catalog)
     : p === "alarma" ? filasAlarma(quote, catalog)
     : filasProyecto(quote, catalog, p);
-  const etiquetaTotal = p === "caci" || p === "cerco" ? "TOTAL" : p === "simple" && quote.mostrarIgv ? "Costo Total" : "Costo Final";
+  const conIgv = p === "simple" && !!quote.mostrarIgv;
 
   // El total sale de summary: una sola fuente de verdad.
-  const yFin = dibujarTabla(doc, rows, summary.ventaTotal, etiquetaTotal, y, membrete, TAM(compacto));
-  dibujarCierre(doc, yFin, membrete, quote, p, compacto);
+  const yFin = dibujarTabla(doc, rows, summary.ventaTotal, conIgv, y, logo, quote, TAM(compacto));
+  dibujarCierre(doc, yFin, logo, quote, p, compacto);
+  dibujarPies(doc);
   return doc;
 }
 
 // ---------------------------------------------------------------------------
-// API PÚBLICA (misma firma que antes)
+// NOMBRE DEL ARCHIVO: "<correlativo> - <nombre que escribe el usuario>.pdf"
+// Ej.: "0476-2026 - Alarma comunitaria Surco.pdf". Sin nombre: "0476-2026.pdf".
 // ---------------------------------------------------------------------------
-export async function exportarPDF(quote, summary, catalog) {
-  const membrete = await cargarImagenBase64(membreteUrl);
-  let doc = construir(quote, summary, catalog, membrete, false);
+export function nombreArchivoPDF(quote) {
+  const limpio = (s) => String(s || "").replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim();
+  const num = limpio(numeroDe(quote));
+  const nombre = limpio(quote.nombreArchivo);
+  return (nombre ? `${num} - ${nombre}` : num) + ".pdf";
+}
+
+// ---------------------------------------------------------------------------
+// API PÚBLICA
+// ---------------------------------------------------------------------------
+async function generarPDF(quote, summary, catalog) {
+  const logo = await cargarLogo(logoUrl);
+  let doc = construir(quote, summary, catalog, logo, false);
   if (doc.getNumberOfPages() > 1) {
-    const compacto = construir(quote, summary, catalog, membrete, true);
+    const compacto = construir(quote, summary, catalog, logo, true);
     if (compacto.getNumberOfPages() < doc.getNumberOfPages()) doc = compacto;
   }
-  doc.save("cotizacion-" + (quote.numero || quote.id) + ".pdf");
+  return doc;
+}
+
+export async function exportarPDF(quote, summary, catalog) {
+  const doc = await generarPDF(quote, summary, catalog);
+  doc.save(nombreArchivoPDF(quote));
+}
+
+// Devuelve una URL temporal del PDF (quien la use debe liberarla con URL.revokeObjectURL).
+export async function previsualizarPDF(quote, summary, catalog) {
+  const doc = await generarPDF(quote, summary, catalog);
+  return URL.createObjectURL(doc.output("blob"));
 }

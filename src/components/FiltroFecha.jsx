@@ -1,3 +1,4 @@
+//src/components/Toast.jsx
 import { fechaDisplay } from '../hooks/useFechas';
 
 const PERIODOS = [
