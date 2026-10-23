@@ -14,8 +14,12 @@ export const CATALOGO = {
       nota: "Alternativa de panel para proyectos de 8 zonas"
     },
     { id: "bat4", name: "BATERIA 12V 4AMP", costo: 40.0, precio: 72.62, marca: "CACI" },
-    { id: "bat7", name: "BATERIA 12V 7AMP", costo: 52.05, precio: 91.62, marca: "CACI" },
-    { id: "humo", name: "DETECTOR DE HUMO", costo: 25.37, precio: 46.06, marca: "CACI" },
+    {
+      id: "bat4-ad", name: "BATERIA 12V 4AMP (UNIDAD ADICIONAL)", costo: 40.0, precio: 65.0, marca: "CACI",
+      nota: "Precio por batería adicional más allá del kit base"
+    },
+    { id: "bat7", name: "BATERIA 12V 7AMP", costo: 52.04, precio: 90.0, marca: "CACI" },
+    { id: "humo", name: "DETECTOR DE HUMO", costo: 25.37, precio: 47.21, marca: "CACI" },
     {
       id: "humo-ad", name: "DETECTOR DE HUMO (UNIDAD ADICIONAL)", costo: 25.56, precio: 60.0, marca: "CACI",
       nota: "Precio por zona adicional más allá del kit base"
@@ -33,7 +37,7 @@ export const CATALOGO = {
     },
     { id: "estrobo", name: "ESTROBO", costo: 30.68, precio: 55.7, marca: "CACI" },
     {
-      id: "estrobo-ad", name: "ESTROBO (UNIDAD ADICIONAL)", costo: 30.63, precio: 70.0, marca: "CACI",
+      id: "estrobo-ad", name: "ESTROBO (UNIDAD ADICIONAL)", costo: 30.63, precio: 65.0, marca: "CACI",
       nota: "Precio por zona adicional más allá del kit base"
     },
 
@@ -115,7 +119,9 @@ export const CATALOGO = {
     // --- CACI ---
     { id: "caci4h", name: "CABLE 4 HILOS CACI (m)", costo: 1.7, precio: 4.2, unidad: "m", marca: "CACI" },
     { id: "caja10", name: "CAJA PASE 10x100 EMT", costo: 5.9, precio: 9.2, marca: "CACI" },
-    { id: "tuberia", name: 'TUBERIA CONDUIT 1/2" EMT', costo: 10.0, precio: 18.15, marca: "CACI" },
+    // id "tuberia" se conserva (kits y cotizaciones guardadas); ahora es el modelo LIVIANO
+    { id: "tuberia", name: 'TUBERIA CONDUIT 1/2" LIVIANO', costo: 8.0, precio: 16.5, marca: "CACI" },
+    { id: "tuberia-pes", name: 'TUBERIA CONDUIT 1/2" PESADO', costo: 10.5, precio: 19.5, marca: "CACI" },
     { id: "tubo-corr", name: 'METRO DE TUBO CORRUGADO EMT 1/2" (m)', costo: 3.0, precio: 6.0, unidad: "m", marca: "CACI" },
     { id: "curva", name: 'CURVA 1/2" EMT', costo: 3.0, precio: 8.0, marca: "CACI" },
     { id: "canast-oct", name: "CANASTILLA / CAJA OCTOGONAL EMT", costo: 2.5, precio: 7.0, marca: "CACI" },
@@ -123,14 +129,17 @@ export const CATALOGO = {
     { id: "canast-rec", name: "CANASTILLA RECTANGULAR EMT", costo: 4.72, precio: 8.57, marca: "CACI" },
     { id: "caja-mod", name: "CAJA MODULAR EMT", costo: 16.52, precio: 29.99, marca: "CACI" },
     { id: "conector", name: 'CONECTOR 1/2" EMT', costo: 1.3, precio: 3.8, marca: "CACI" },
+    { id: "conector-paq", name: "CONECTORES EMT X PAQUETE 50 UNIDS", costo: 55.0, precio: 94.0, marca: "CACI" },
     { id: "union", name: 'UNION 1/2" EMT', costo: 1.3, precio: 3.8, marca: "CACI" },
+    { id: "union-paq", name: "UNIONES EMT X PAQUETE 50 UNIDS", costo: 55.0, precio: 94.0, marca: "CACI" },
     { id: "gancho", name: 'GANCHO 1/2" EMT', costo: 2.36, precio: 4.285, marca: "CACI" },
-    { id: "acc-inst", name: "ACCESORIOS DE INSTALACION", costo: 29.5, precio: 60.0, marca: "CACI" },
-    { id: "senal-caci", name: "SEÑALETICA FOTOLUMINISCENTE - CACI", costo: 4.13, precio: 6.5, marca: "CACI" },
-    { id: "senal-estrobo", name: "SEÑALETICA FOTOLUMINISCENTE - ESTROBO", costo: 4.13, precio: 6.5, marca: "CACI" },
-    { id: "senal-manual", name: "SEÑALETICA FOTOLUMINISCENTE - ESTACION MANUAL", costo: 4.13, precio: 6.5, marca: "CACI" },
-    { id: "senal-humo", name: "SEÑALETICA FOTOLUMINISCENTE - DETECTOR DE HUMO", costo: 4.13, precio: 6.5, marca: "CACI" },
-    { id: "senal-temp", name: "SEÑALETICA FOTOLUMINISCENTE - DETECTOR DE TEMPERATURA", costo: 4.13, precio: 6.5, marca: "CACI" },
+    { id: "abraz-emt-paq", name: "ABRAZADERAS X PAQUETE 100 UNIDS", costo: 25.0, precio: 44.7, marca: "CACI" },
+    { id: "acc-inst", name: "ACCESORIOS DE INSTALACION", costo: 24.59, precio: 50.0, marca: "CACI" },
+    { id: "senal-caci", name: "SEÑALETICA FOTOLUMINISCENTE - CACI", costo: 3.5, precio: 6.5, marca: "CACI" },
+    { id: "senal-estrobo", name: "SEÑALETICA FOTOLUMINISCENTE - ESTROBO", costo: 3.5, precio: 6.5, marca: "CACI" },
+    { id: "senal-manual", name: "SEÑALETICA FOTOLUMINISCENTE - ESTACION MANUAL", costo: 3.5, precio: 6.5, marca: "CACI" },
+    { id: "senal-humo", name: "SEÑALETICA FOTOLUMINISCENTE - DETECTOR DE HUMO", costo: 3.5, precio: 6.5, marca: "CACI" },
+    { id: "senal-temp", name: "SEÑALETICA FOTOLUMINISCENTE - DETECTOR DE TEMPERATURA", costo: 3.5, precio: 6.5, marca: "CACI" },
 
     // --- Cerco eléctrico ---
     { id: "poste-t", name: 'POSTE TEMPLADOR 4 HILOS 1 1/2" x 1.2mm', costo: 17.34, precio: 32.0, marca: "Cerco eléctrico" },
@@ -147,11 +156,11 @@ export const CATALOGO = {
 
     // --- Servicios ---
     // { id: "transporte", name: "TRANSPORTE (servicio)", costo: 20.0, precio: 30.0, marca: "Servicios" },
-    // {
-    //   id: "mano-obra", name: "MANO DE OBRA (servicio)", costo: 1200.0, precio: 1200.0, marca: "Servicios",
-    //   nota: "Varía según uso de soldadura o concreto; se emite recibo por honorarios"
-    // },
-    // { id: "cert-caci", name: "CERTIFICADO CACI (servicio)", costo: 60.0, precio: 90.0, marca: "Servicios" },
+    {
+      id: "mano-obra", name: "MANO DE OBRA (servicio)", costo: 600.0, precio: 600.0, marca: "Servicios",
+      nota: "Varía según uso de soldadura o concreto; se emite recibo por honorarios"
+    },
+    { id: "cert-caci", name: "CERTIFICADO CACI (servicio)", costo: 60.0, precio: 90.0, marca: "Servicios" },
   ],
 };
 
@@ -179,12 +188,14 @@ export const KITS = [
     },
     opcionales: {
       equipos: [
-        { pid: "temp", qty: 1 }, { pid: "bat7", qty: 1 }, { pid: "panel-firemax8", qty: 1 },
-        { pid: "base-manual", qty: 1 }, { pid: "humo-ad", qty: 1 }, { pid: "temp-ad", qty: 1 },
-        { pid: "estrobo-ad", qty: 1 }, { pid: "manual-ad", qty: 1 },
+        { pid: "temp", qty: 1 }, { pid: "bat7", qty: 1 }, { pid: "bat4-ad", qty: 1 },
+        { pid: "panel-firemax8", qty: 1 }, { pid: "base-manual", qty: 1 }, { pid: "humo-ad", qty: 1 },
+        { pid: "temp-ad", qty: 1 }, { pid: "estrobo-ad", qty: 1 }, { pid: "manual-ad", qty: 1 },
       ],
       accesorios: [
-        { pid: "tapa-oct", qty: 1 }, { pid: "tubo-corr", qty: 1 }, { pid: "caja-mod", qty: 1 },
+        { pid: "tapa-oct", qty: 1 }, { pid: "tubo-corr", qty: 1 }, { pid: "tuberia-pes", qty: 1 },
+        { pid: "caja-mod", qty: 1 }, { pid: "conector-paq", qty: 1 }, { pid: "union-paq", qty: 1 },
+        { pid: "abraz-emt-paq", qty: 1 },
         { pid: "senal-caci", qty: 1 }, { pid: "senal-estrobo", qty: 1 }, { pid: "senal-manual", qty: 1 },
         { pid: "senal-humo", qty: 1 }, { pid: "senal-temp", qty: 1 },
         { pid: "transporte", qty: 1 }, { pid: "cert-caci", qty: 1 }, { pid: "mano-obra", qty: 1 },
@@ -210,12 +221,14 @@ export const KITS = [
     },
     opcionales: {
       equipos: [
-        { pid: "temp", qty: 1 }, { pid: "bat7", qty: 1 }, { pid: "panel-firemax8", qty: 1 },
-        { pid: "base-manual", qty: 1 }, { pid: "humo-ad", qty: 1 }, { pid: "temp-ad", qty: 1 },
-        { pid: "estrobo-ad", qty: 1 }, { pid: "manual-ad", qty: 1 },
+        { pid: "temp", qty: 1 }, { pid: "bat7", qty: 1 }, { pid: "bat4-ad", qty: 1 },
+        { pid: "panel-firemax8", qty: 1 }, { pid: "base-manual", qty: 1 }, { pid: "humo-ad", qty: 1 },
+        { pid: "temp-ad", qty: 1 }, { pid: "estrobo-ad", qty: 1 }, { pid: "manual-ad", qty: 1 },
       ],
       accesorios: [
-        { pid: "tapa-oct", qty: 1 }, { pid: "tubo-corr", qty: 1 }, { pid: "caja-mod", qty: 1 },
+        { pid: "tapa-oct", qty: 1 }, { pid: "tubo-corr", qty: 1 }, { pid: "tuberia-pes", qty: 1 },
+        { pid: "caja-mod", qty: 1 }, { pid: "conector-paq", qty: 1 }, { pid: "union-paq", qty: 1 },
+        { pid: "abraz-emt-paq", qty: 1 },
         { pid: "senal-caci", qty: 1 }, { pid: "senal-estrobo", qty: 1 }, { pid: "senal-manual", qty: 1 },
         { pid: "senal-humo", qty: 1 }, { pid: "senal-temp", qty: 1 },
         { pid: "transporte", qty: 1 }, { pid: "cert-caci", qty: 1 }, { pid: "mano-obra", qty: 1 },
