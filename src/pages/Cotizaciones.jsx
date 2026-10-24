@@ -29,7 +29,7 @@ import {
   coincide,
   productosQueCoinciden,
 } from "../utils/cotizaciones";
-import { normalizarTexto, normalizarCotizacion, clave } from "../utils/textos";
+import { normalizarTexto, limpiarEspacios, normalizarCotizacion, clave } from "../utils/textos";
 import { consultarDocumento } from "../components/consultarDocument";
 import { getCotizaciones, putCotizacion } from "../api";
 
@@ -125,7 +125,21 @@ const fechaCorta = (iso) => {
 // CAMPO DE TEXTO que se corrige solo al salir del campo (mayúsculas/minúsculas,
 // espacios dobles, etc.). Se usa en todos los textos libres.
 // ---------------------------------------------------------------------------
-function CampoTexto({ value, onChange, ...props }) {
+// function CampoTexto({ value, onChange, ...props }) {
+//   return (
+//     <input
+//       type="text"
+//       {...props}
+//       value={value ?? ""}
+//       onChange={(e) => onChange(e.target.value)}
+//       onBlur={(e) => {
+//         const limpio = normalizarTexto(e.target.value);
+//         if (limpio !== e.target.value) onChange(limpio);
+//       }}
+//     />
+//   );
+// }
+function CampoTexto({ value, onChange, normalizar = false, ...props }) {
   return (
     <input
       type="text"
@@ -133,13 +147,12 @@ function CampoTexto({ value, onChange, ...props }) {
       value={value ?? ""}
       onChange={(e) => onChange(e.target.value)}
       onBlur={(e) => {
-        const limpio = normalizarTexto(e.target.value);
+        const limpio = normalizar ? normalizarTexto(e.target.value) : limpiarEspacios(e.target.value);
         if (limpio !== e.target.value) onChange(limpio);
       }}
     />
   );
 }
-
 // ---------------------------------------------------------------------------
 // COMPONENTE PRINCIPAL
 // ---------------------------------------------------------------------------
@@ -780,10 +793,14 @@ export default function CotizacionesApp() {
                       placeholder="Ej. Materiales según demanda, tiempos de entrega sujetos a stock…"
                       value={quote.nota || ""}
                       onChange={(e) => updateField("nota", e.target.value)}
+                      // onBlur={(e) => {
+                      //   const limpio = normalizarTexto(e.target.value);
+                      //   if (limpio !== e.target.value) updateField("nota", limpio);
+                      // }}.
                       onBlur={(e) => {
-                        const limpio = normalizarTexto(e.target.value);
-                        if (limpio !== e.target.value) updateField("nota", limpio);
-                      }}
+  const limpio = limpiarEspacios(e.target.value);
+  if (limpio !== e.target.value) updateField("nota", limpio);
+}}
                       style={{
                         width: "100%",
                         resize: "vertical",

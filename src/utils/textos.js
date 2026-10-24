@@ -56,6 +56,14 @@ export function normalizarTexto(valor) {
   return t.replace(RE_PALABRA, (tok) => palabra(tok, i++, todoMayus));
 }
 
+// Solo limpia espacios: respeta mayúsculas/minúsculas y saltos de línea tal como los escribió el usuario.
+export function limpiarEspacios(valor) {
+  if (typeof valor !== "string") return valor;
+  return valor
+    .replace(/[ \t]+/g, " ")   // espacios/tabs repetidos → uno
+    .replace(/ *\n */g, "\n")  // sin espacios alrededor de saltos de línea
+    .trim();
+}
 // Clave para comparar/buscar: sin mayúsculas, sin tildes, sin espacios dobles
 export const clave = (s) =>
   (s || "")
@@ -66,14 +74,29 @@ export const clave = (s) =>
     .trim();
 
 // Normaliza todos los campos de texto libre de una cotización
+// export function normalizarCotizacion(q) {
+//   const fixItem = (it) => (it.pid ? it : { ...it, name: normalizarTexto(it.name || "") });
+//   return {
+//     ...q,
+//     cliente: normalizarTexto(q.cliente),
+//     proyecto: normalizarTexto(q.proyecto),
+//     atencion: normalizarTexto(q.atencion),
+//     direccion: normalizarTexto(q.direccion),
+//     items: {
+//       equipos: (q.items?.equipos || []).map(fixItem),
+//       accesorios: (q.items?.accesorios || []).map(fixItem),
+//     },
+//   };
+// }
 export function normalizarCotizacion(q) {
-  const fixItem = (it) => (it.pid ? it : { ...it, name: normalizarTexto(it.name || "") });
+  const fixItem = (it) => (it.pid ? it : { ...it, name: limpiarEspacios(it.name || "") });
   return {
     ...q,
     cliente: normalizarTexto(q.cliente),
     proyecto: normalizarTexto(q.proyecto),
     atencion: normalizarTexto(q.atencion),
     direccion: normalizarTexto(q.direccion),
+    nota: limpiarEspacios(q.nota),
     items: {
       equipos: (q.items?.equipos || []).map(fixItem),
       accesorios: (q.items?.accesorios || []).map(fixItem),
