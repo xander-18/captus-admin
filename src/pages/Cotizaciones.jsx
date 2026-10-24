@@ -22,7 +22,7 @@ import ProductoSelect, { BuscadorProductos } from "../components/ProductoSelect"
 import { PreviewModal, ExportModal } from "../components/ModalesCotizacion";
 import { useKits } from "../hooks/useKits";
 import { CATALOGO } from "../data/kits";
-import { exportarPDF, plantillaDe } from "../utils/exportarPDF";
+import { exportarPDF, exportarPDFConCarpeta, plantillaDe } from "../utils/exportarPDF";
 import {
   duplicarCotizacion,
   tokens,
@@ -48,6 +48,8 @@ const blankCustomItem = () => ({ pid: null, name: "", qty: 1, costo: 0, precio: 
 // Solo cuentan las líneas con monto > 0 (las cotizaciones antiguas no traen estas listas).
 const blankLinea = () => ({ descripcion: "", monto: 0 });
 const sumaLineas = (arr) => (arr || []).reduce((a, l) => a + (l.monto > 0 ? l.monto : 0), 0);
+// Garantía en Términos y condiciones: el usuario decide si va y con qué texto exacto.
+const garantiaDefault = () => ({ activa: true, texto: "Garantía por servicio y equipos: 01 año" });
 // Descripciones largas no deben desbordar el resumen financiero.
 const ETIQUETA_LINEA = { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginRight: 8 };
 // Lo que carga un kit queda marcado (deKit): el PDF lo agrupa como KIT.
@@ -97,12 +99,22 @@ function blankQuote() {
     certificado: blankExtra(),
     serviciosAdicionales: [],
     descuentos: [],
-    nota: "",
+    nota: "",              // texto libre; sale en el PDF antes de Términos y condiciones
+    garantia: garantiaDefault(),
     ajusteGlobal: 0,      // heredado: ya no se edita; se respeta en cotizaciones antiguas
     fecha: new Date().toISOString(),
     items: { equipos: [], accesorios: [] },
   };
 }
+
+// Cotizaciones guardadas antes de tener el campo `garantia` no lo traen: se les asigna,
+// la primera vez que se abren, el valor que tenían de forma implícita en el PDF (garantía
+// fija solo en CACI y cerco eléctrico). De ahí en adelante queda guardado y es editable.
+const aseguraGarantia = (q) => {
+  if (q.garantia) return q;
+  const p = plantillaDe(q);
+  return { ...q, garantia: { activa: p === "caci" || p === "cerco", texto: "Garantía por servicio y equipos: 01 año" } };
+};
 
 const fechaCorta = (iso) => {
   const d = new Date(iso);
@@ -204,7 +216,10 @@ export default function CotizacionesApp() {
     setView("editor");
     setKitOpen(true);
   };
-  const openQuote = (id) => { const q = quotes.find((x) => x.id === id); if (q) { setQuote(q); setView("editor"); setPreview(null); } };
+  const openQuote = (id) => {
+    const q = quotes.find((x) => x.id === id);
+    if (q) { setQuote(aseguraGarantia(q)); setView("editor"); setPreview(null); }
+  };
 
   // Guarda en el servidor y devuelve la cotización con su número asignado.
   // Antes de guardar se normalizan todos los textos (red de seguridad).
@@ -241,7 +256,7 @@ export default function CotizacionesApp() {
     if (!orig) return;
     try {
       const copia = await guardar(duplicarCotizacion(orig));
-      setQuote(copia);
+      setQuote(aseguraGarantia(copia));
       setPreview(null);
       setView("editor");
     } catch (e) {
@@ -249,12 +264,21 @@ export default function CotizacionesApp() {
     }
   };
 
-  // Exportar: guarda primero (así tiene número) y descarga "<correlativo> - <nombre>.pdf".
-  const confirmarExport = async (nombre) => {
+  // Exportar: guarda primero (así tiene número) y descarga, o guarda directo en la carpeta
+  // compartida configurada (ver ModalesCotizacion/ExportModal), "<correlativo> - <nombre>.pdf".
+  const confirmarExport = async (nombre, usarCarpeta) => {
     try {
       const saved = await guardar({ ...exportando, nombreArchivo: nombre });
       if (quote.id === saved.id) setQuote(saved);
-      exportarPDF(saved, resumenDe(saved), catalog);
+      const resumen = resumenDe(saved);
+      if (usarCarpeta) {
+        const r = await exportarPDFConCarpeta(saved, resumen, catalog);
+        if (!r.guardadoEnCarpeta && r.error) {
+          alert("No se pudo guardar en la carpeta compartida (se descargó por el navegador en su lugar):\n" + r.error);
+        }
+      } else {
+        await exportarPDF(saved, resumen, catalog);
+      }
       setExportando(null);
     } catch (e) {
       alert("No se pudo guardar la cotización: " + e.message);
@@ -744,6 +768,61 @@ export default function CotizacionesApp() {
                     </>
                   )} */}
                 </div>
+
+                {/* Nota y garantía: la nota sale en el PDF justo antes de Términos y condiciones */}
+                <div className="card">
+                  <div className="card-title card-title-block">Nota y garantía</div>
+
+                  <div className="field">
+                    <label>Nota (aparece en el PDF, antes de Términos y condiciones)</label>
+                    <textarea
+                      rows={3}
+                      placeholder="Ej. Materiales según demanda, tiempos de entrega sujetos a stock…"
+                      value={quote.nota || ""}
+                      onChange={(e) => updateField("nota", e.target.value)}
+                      onBlur={(e) => {
+                        const limpio = normalizarTexto(e.target.value);
+                        if (limpio !== e.target.value) updateField("nota", limpio);
+                      }}
+                      style={{
+                        width: "100%",
+                        resize: "vertical",
+                        fontFamily: "inherit",
+                        fontSize: 14,
+                        padding: "8px 10px",
+                        borderRadius: 6,
+                        border: "1px solid #cbd5e1",
+                        boxSizing: "border-box",
+                      }}
+                    />
+                  </div>
+
+                  <div className="separator spaced"></div>
+
+                  <label className="extra-cost-toggle">
+                    <input
+                      type="checkbox"
+                      checked={!!quote.garantia?.activa}
+                      onChange={(e) =>
+                        setQuote((q) => ({
+                          ...q,
+                          garantia: { ...(q.garantia || garantiaDefault()), activa: e.target.checked },
+                        }))
+                      }
+                    />
+                    Incluir garantía en términos y condiciones
+                  </label>
+                  {quote.garantia?.activa && (
+                    <CampoTexto
+                      placeholder="Ej. Garantía por servicio y equipos: 01 año"
+                      value={quote.garantia?.texto ?? ""}
+                      onChange={(v) =>
+                        setQuote((q) => ({ ...q, garantia: { ...(q.garantia || garantiaDefault()), texto: v } }))
+                      }
+                      style={{ width: "100%", marginTop: 6 }}
+                    />
+                  )}
+                </div>
               </div>
 
               {/* RESUMEN */}
@@ -1011,8 +1090,7 @@ function ItemsCard({ title, cat, items, catalogItems, addItem, addCustomItem, re
   const addRef = useRef(null);
 
   // Filas (por índice) cuyo nombre se está editando a mano, sin tocar el producto del catálogo.
-  // Permite escribir un nombre distinto al del catálogo (p. ej. una variante o aclaración)
-  // manteniendo el pid, el costo y el precio del producto seleccionado.
+  // El botón que lo activa vive en la columna de acciones, junto al de eliminar.
   const [editandoNombre, setEditandoNombre] = useState(() => new Set());
   const toggleEditarNombre = (i) =>
     setEditandoNombre((prev) => {
@@ -1116,6 +1194,7 @@ function ItemsCard({ title, cat, items, catalogItems, addItem, addCustomItem, re
               <tbody>
                 {items.map((item, i) => {
                   const isCustom = !item.pid;
+                  const editandoEsteNombre = editandoNombre.has(i);
 
                   const cuTotalCompra = item.costo || 0;
                   const cuNetoCompra = cuTotalCompra / 1.18;
@@ -1226,42 +1305,22 @@ function ItemsCard({ title, cat, items, catalogItems, addItem, addCustomItem, re
                               onChange={(v) => updateItem(cat, i, "name", v)}
                             />
                           </div>
-                        ) : editandoNombre.has(i) ? (
-                          <div className="custom-name-wrap">
-                            <CampoTexto
-                              className="compact-input full"
-                              placeholder="Nombre del producto"
-                              autoFocus
-                              value={item.name ?? catalogItems.find((x) => x.id === item.pid)?.name ?? ""}
-                              onChange={(v) => updateItem(cat, i, "name", v)}
-                              onKeyDown={(e) => e.key === "Enter" && toggleEditarNombre(i)}
-                            />
-                            <button
-                              className="del-btn"
-                              onClick={() => toggleEditarNombre(i)}
-                              aria-label="Terminar de editar nombre"
-                              title="Listo"
-                            >
-                              <Check size={14} />
-                            </button>
-                          </div>
+                        ) : editandoEsteNombre ? (
+                          <CampoTexto
+                            className="compact-input full"
+                            placeholder="Nombre del producto"
+                            autoFocus
+                            value={item.name ?? catalogItems.find((x) => x.id === item.pid)?.name ?? ""}
+                            onChange={(v) => updateItem(cat, i, "name", v)}
+                            onKeyDown={(e) => e.key === "Enter" && toggleEditarNombre(i)}
+                          />
                         ) : (
-                          <div className="custom-name-wrap">
-                            <ProductoSelect
-                              value={item.pid}
-                              nombre={item.name || catalogItems.find((x) => x.id === item.pid)?.name}
-                              grupos={grupos}
-                              onChange={(pid) => updateItem(cat, i, "pid", pid)}
-                            />
-                            <button
-                              className="del-btn"
-                              onClick={() => toggleEditarNombre(i)}
-                              aria-label="Editar nombre del producto"
-                              title="Editar nombre"
-                            >
-                              <Pencil size={14} />
-                            </button>
-                          </div>
+                          <ProductoSelect
+                            value={item.pid}
+                            nombre={item.name || catalogItems.find((x) => x.id === item.pid)?.name}
+                            grupos={grupos}
+                            onChange={(pid) => updateItem(cat, i, "pid", pid)}
+                          />
                         )}
                       </td>
 
@@ -1364,6 +1423,16 @@ function ItemsCard({ title, cat, items, catalogItems, addItem, addCustomItem, re
                       )}
 
                       <td className="col-actions">
+                        {!isCustom && (
+                          <button
+                            className="del-btn"
+                            onClick={() => toggleEditarNombre(i)}
+                            aria-label={editandoEsteNombre ? "Terminar de editar nombre" : "Editar nombre del producto"}
+                            title={editandoEsteNombre ? "Listo" : "Editar nombre"}
+                          >
+                            {editandoEsteNombre ? <Check size={16} /> : <Pencil size={16} />}
+                          </button>
+                        )}
                         <button className="del-btn" onClick={() => removeItem(cat, i)} aria-label="Eliminar">
                           <Trash2 size={16} />
                         </button>
