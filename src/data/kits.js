@@ -67,6 +67,19 @@ export const CATALOGO = {
       incluye: [[1, "Panel SHOCTIX ALERT PRO 4G NET"], [1, "Pulsador"]]
     },
 
+    // --- SHOCTIX · opcionales del RF3 SMART (nuevos, de la cotización de referencia) ---
+    {
+      id: "sx-sensormov", name: "SENSOR DE MOVIMIENTO", costo: 54.87, precio: 97.55, marca: "SHOCTIX",
+      nota: "Precio tomado del cuadro 'KIT RF3 SMART' (incluido por defecto); el cuadro de opcionales sueltos de la misma hoja mostraba 97.55 → 95.22 para este mismo producto. Confirmar cuál es el precio de venta correcto."
+    },
+    {
+      id: "sx-contactomag", name: "CONTACTO MAGNETICO", costo: 35.99, precio: 62.45, marca: "SHOCTIX"
+    },
+    {
+      id: "sx-costoservicio", name: "COSTO DE SERVICIO (RF3 SMART)", costo: 120.00, precio: 191.16, marca: "SHOCTIX",
+      nota: "En la hoja original el CU.NETO (64.00) y el IGV (11.52) de la columna de compra no cuadran con el CU.TOTAL (120.00) — 64 + 11.52 = 75.52, no 120. Se usó el CU.TOTAL tal cual venía. Verificar el costo real antes de usarlo en una cotización."
+    },
+
     // --- HAGROY ---
     { id: "hg-mpr3", name: "HAGROY MPR3", costo: 144.55, precio: 202.98, marca: "HAGROY" },
     { id: "hg-alcom", name: "PANEL HAGROY ALCOM MAX 4G", costo: 937.51, precio: 1336.54, marca: "HAGROY" },
@@ -257,9 +270,41 @@ export const KITS = [
         { pid: "puls100", qty: 1 },
         { pid: "puls500", qty: 1 },
         { pid: "sensorpir", qty: 1 },
-        { pid: "contactomag", qty: 1 }
+        { pid: "contactomag", qty: 1 },
+        // Opcionales nuevos (cuadro "ALARMA WIFI SMART" de la cotización de referencia)
+        { pid: "sx-sensormov", qty: 1 },
+        { pid: "sx-contactomag", qty: 1 },
+        { pid: "sx-costoservicio", qty: 1 },
       ],
       accesorios: []
+    },
+  },
+  {
+    id: "sx-rf3-smart-completo",
+    name: "Kit SHOCTIX RF3 SMART Completo (c/ sensor de movimiento y contacto magnético)",
+    categoria: "Alarmas / pánico",
+    precioReferencia: 409,
+    nota: "Corresponde al cuadro 'KIT RF3 SMART' de la cotización de referencia: trae el kit base más un sensor de movimiento y un contacto magnético incluidos.",
+    items: {
+      equipos: [
+        { pid: "sx-rf3s", qty: 1 },
+        { pid: "sx-sensormov", qty: 1 },
+        { pid: "sx-contactomag", qty: 1 },
+      ],
+      accesorios: [
+        { pid: "caja10pvc", qty: 1 },
+        { pid: "conectorDc", qty: 1 },
+      ],
+    },
+    opcionales: {
+      equipos: [
+        { pid: "panico", qty: 1 },
+        { pid: "sx-costoservicio", qty: 1 },
+        { pid: "fuente12", qty: 1 },
+        { pid: "puls100", qty: 1 },
+        { pid: "puls500", qty: 1 },
+      ],
+      accesorios: [],
     },
   },
   {

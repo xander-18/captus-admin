@@ -105,8 +105,37 @@
 // const aprobado = (e) => e?.required && e?.approval === "approved" && e.value > 0;
 // const manoDeObra = (q) => (q.laborApproval === "approved" ? q.laborValue || 0 : 0);
 // const nombreKit = (q) => (q.proyecto || q.kitOrigen || "Kit").trim();
-// const ajuste = (q, negrita) =>
-//   q.ajusteGlobal ? [{ t: "item", qty: 1, nombre: q.ajusteGlobal < 0 ? "DESCUENTO" : "AJUSTE", pu: q.ajusteGlobal, bold: negrita }] : [];
+// // Servicios adicionales y descuentos que escribió el usuario (solo líneas con monto > 0), más el ajuste
+// // heredado de cotizaciones antiguas. Estas filas deben sumar exactamente lo que entra en summary.ventaTotal.
+// const ajuste = (q, negrita) => {
+//   const servicios = (q.serviciosAdicionales || []).filter((l) => l.monto > 0);
+//   const descuentos = (q.descuentos || []).filter((l) => l.monto > 0);
+//   const rows = [];
+
+//   if (servicios.length) {
+//     const total = servicios.reduce((a, l) => a + l.monto, 0);
+//     rows.push(
+//       { t: "item", qty: 1, nombre: "OTRO SERVICIOS", pu: total, bold: negrita },
+//       ...servicios.map((l) => ({ t: "detalle", texto: (l.descripcion || "").trim() || "Servicio adicional" }))
+//     );
+//   }
+
+//   if (descuentos.length) {
+//     const total = descuentos.reduce((a, l) => a + l.monto, 0);
+//     if (rows.length) rows.push({ t: "vacio" });
+//     rows.push(
+//       { t: "item", qty: 1, nombre: "DESCUENTOS", pu: -total, bold: negrita },
+//       ...descuentos.map((l) => ({ t: "detalle", texto: (l.descripcion || "").trim() || "Descuento" }))
+//     );
+//   }
+
+//   if (q.ajusteGlobal) {
+//     if (rows.length) rows.push({ t: "vacio" });
+//     rows.push({ t: "item", qty: 1, nombre: q.ajusteGlobal < 0 ? "DESCUENTO" : "AJUSTE", pu: q.ajusteGlobal, bold: negrita });
+//   }
+
+//   return rows;
+// };
 
 // function extrasSueltos(quote, etiquetaMO, negrita) {
 //   const out = [];
@@ -117,13 +146,18 @@
 // }
 
 // // EQUIPO simple: equipos y accesorios en una sola lista. El IGV, si aplica, se desglosa debajo (como Shoctix).
+// // function filasSimple(quote, catalog) {
+// //   const rows = [...lineasDe(quote, "equipos", catalog), ...lineasDe(quote, "accesorios", catalog)];
+// //   const extras = extrasSueltos(quote, "MANO DE OBRA", false);
+// //   if (extras.length) rows.push({ t: "vacio" }, ...extras);
+// //   return rows;
+// // }
 // function filasSimple(quote, catalog) {
 //   const rows = [...lineasDe(quote, "equipos", catalog), ...lineasDe(quote, "accesorios", catalog)];
-//   const extras = extrasSueltos(quote, "MANO DE OBRA", false);
+//   const extras = extrasSueltos(quote, "MANO DE OBRA", true); // antes: false
 //   if (extras.length) rows.push({ t: "vacio" }, ...extras);
 //   return rows;
 // }
-
 // // KIT / ALARMA: lo que cargó el kit = KIT (precio fijo + incluye); lo agregado después y los accesorios = adicionales.
 // function filasAlarma(quote, catalog) {
 //   const { kit, adic } = partirEquipos(lineasDe(quote, "equipos", catalog));
@@ -493,6 +527,7 @@
 // }
 import jsPDF from "jspdf";
 import logoUrl from "../assets/logo.png";
+import { getCarpetaExport, guardarEnCarpeta } from "./carpetaExport";
 
 // ---------------------------------------------------------------------------
 // DATOS DE LA EMPRESA: edítalos aquí, no hay que tocar el resto del archivo.
@@ -715,25 +750,34 @@ function filasProyecto(quote, catalog, p) {
   return rows;
 }
 
+// La garantía es controlable desde el editor (quote.garantia: { activa, texto }).
+// Cotizaciones antiguas que no tienen ese campo mantienen el comportamiento previo:
+// la línea fija solo aparecía en CACI y cerco eléctrico.
+function garantiaLinea(quote, p) {
+  const g = quote.garantia;
+  if (g) return g.activa && g.texto?.trim() ? g.texto.trim() : null;
+  return (p === "caci" || p === "cerco") ? "Garantía por servicio y equipos: 01 año" : null;
+}
+
 function condiciones(quote, p) {
-  if (p === "caci" || p === "cerco") return [
+  const base = (p === "caci" || p === "cerco") ? [
     "Pago a cuenta de banco al contado.",
     "Cotización válida por 05 días.",
     "Se confirma el servicio con adelanto del 60% del monto total.",
-    "Garantía por servicio y equipos: 01 año",
     "Por servicio se emite RRHH",
     "Por equipos y bienes se emite factura o boleta",
-  ];
-  if (p === "simple" && quote.mostrarIgv) return [
+  ] : (p === "simple" && quote.mostrarIgv) ? [
     "Emitir orden de servicio/compra",
     "Pago a cuenta de banco con crédito de 15 días y anticipo del 60% del monto total.",
     "Se emite factura. El costo final incluye IGV.",
     "Validez de la cotización 05 días calendario.",
-  ];
-  return [
+  ] : [
     "Pago a cuenta de banco. Se emite recibo o factura por los equipos y materiales.",
     "Validez de la cotización: 05 días calendario.",
   ];
+
+  const g = garantiaLinea(quote, p);
+  return g ? [...base, g] : base;
 }
 
 // ---------------------------------------------------------------------------
@@ -921,6 +965,28 @@ function dibujarTabla(doc, rows, total, conIgv, y0, logo, quote, t) {
   return y + 9;
 }
 
+// NOTA libre del usuario (ej. "materiales según demanda"). Va después de la tabla
+// y antes de Términos y condiciones; si está vacía, no ocupa espacio.
+function dibujarNota(doc, y, logo, quote, c) {
+  const texto = (quote.nota || "").trim();
+  if (!texto) return y;
+
+  const k = c ? { fs: 8, fc: 7.5, l: 3.5, t: 4 } : { fs: 9, fc: 8.5, l: 4.2, t: 5 };
+  doc.setFont("helvetica", "normal"); doc.setFontSize(k.fc);
+  const lineas = doc.splitTextToSize(texto, R - L - 2);
+  const alto = k.t + lineas.length * k.l + 2;
+
+  y += c ? 5 : 8;
+  if (y + alto > FOOTER_SAFE_Y) { doc.addPage(); dibujarMini(doc, logo, quote); y = Y_CONTINUACION; }
+
+  doc.setTextColor(0);
+  doc.setFont("helvetica", "bold"); doc.setFontSize(k.fs);
+  doc.text("NOTA", L, y); y += k.t;
+  doc.setFont("helvetica", "normal"); doc.setFontSize(k.fc);
+  lineas.forEach((s) => { doc.text(s, L, y); y += k.l; });
+  return y;
+}
+
 // Términos y condiciones + cuenta bancaria (caja, como en la referencia de Best Security).
 function dibujarCierre(doc, y, logo, quote, p, c) {
   const k = c ? { fs: 8, fc: 7.5, l: 3.5, g: 4, t: 4 } : { fs: 9, fc: 8.5, l: 4.2, g: 6, t: 5 };
@@ -979,7 +1045,8 @@ function construir(quote, summary, catalog, logo, compacto) {
 
   // El total sale de summary: una sola fuente de verdad.
   const yFin = dibujarTabla(doc, rows, summary.ventaTotal, conIgv, y, logo, quote, TAM(compacto));
-  dibujarCierre(doc, yFin, logo, quote, p, compacto);
+  const yNota = dibujarNota(doc, yFin, logo, quote, compacto);
+  dibujarCierre(doc, yNota, logo, quote, p, compacto);
   dibujarPies(doc);
   return doc;
 }
@@ -1011,6 +1078,27 @@ async function generarPDF(quote, summary, catalog) {
 export async function exportarPDF(quote, summary, catalog) {
   const doc = await generarPDF(quote, summary, catalog);
   doc.save(nombreArchivoPDF(quote));
+}
+
+// Igual que exportarPDF, pero si hay una carpeta compartida configurada (ver carpetaExport.js)
+// y el permiso sigue vigente, el PDF se escribe directo ahí — sin el diálogo "Guardar como".
+// Si la carpeta no está disponible (ej. la unidad de red se desconectó), cae de vuelta a la
+// descarga normal del navegador y lo avisa en el resultado.
+export async function exportarPDFConCarpeta(quote, summary, catalog) {
+  const doc = await generarPDF(quote, summary, catalog);
+  const nombre = nombreArchivoPDF(quote);
+  const handle = await getCarpetaExport();
+  if (handle) {
+    try {
+      await guardarEnCarpeta(handle, nombre, doc.output("blob"));
+      return { guardadoEnCarpeta: true, nombre };
+    } catch (e) {
+      doc.save(nombre);
+      return { guardadoEnCarpeta: false, nombre, error: e.message };
+    }
+  }
+  doc.save(nombre);
+  return { guardadoEnCarpeta: false, nombre };
 }
 
 // Devuelve una URL temporal del PDF (quien la use debe liberarla con URL.revokeObjectURL).
