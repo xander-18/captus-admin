@@ -12,6 +12,7 @@ const isDesktop = () => window.matchMedia(DESKTOP).matches;
 
 const NAV_ITEMS = [
   // { to: '/', icon: Wallet, label: 'Ventas' },
+  { to: '/configuracion',      icon: TrendingDown, label: 'Configuración' },
   { to: '/egresos',      icon: TrendingDown, label: 'Egresos' },
   { to: '/clientes',     icon: Users,        label: 'Clientes' },
   { to: '/productos',    icon: Package,      label: 'Productos' },

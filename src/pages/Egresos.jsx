@@ -33,6 +33,8 @@ const getColorCat  = c => COLORES_CAT[c] || '#9ca3af';
 const getBgCat     = c => getColorCat(c) + '18';
 const getColorProy = i => COLORES_PROY[i % COLORES_PROY.length];
 const CAT_KEYS     = CATEGORIAS.filter(c => c.key !== '__otros__').map(c => c.key);
+// Ícono de la categoría (las categorías escritas a mano usan el ícono de "Otro")
+const iconCat      = c => CATEGORIAS.find(x => x.key === c)?.icon || 'ti-dots-circle-horizontal';
 
 export default function Egresos() {
   const toast = useToast();
@@ -45,6 +47,9 @@ export default function Egresos() {
   const [resumen, setResumen]         = useState({ total: 0, count: 0, porCategoria: {}, porProyecto: {} });
   const [balance, setBalance]         = useState({ ingresos: 0, neto: 0 });
   const [offline, setOffline]         = useState(false);
+
+  // Solo visual: en celular el formulario es una hoja que sube desde abajo (botón +)
+  const [sheet, setSheet]             = useState(false);
 
   // Form
   const [selCat, setSelCat]           = useState('');
@@ -116,7 +121,6 @@ export default function Egresos() {
   }, [calcRango, filtroActivo]);
 
   useEffect(() => { cargar(); }, [periodo, rangoDesde, rangoHasta, filtroActivo]);
-  useEffect(() => { const t = setInterval(cargar, 60000); return () => clearInterval(t); }, [cargar]);
 
   // ── Charts ──
   useEffect(() => {
@@ -176,6 +180,7 @@ export default function Egresos() {
       await postEgreso({ fecha, categoria: catFinal, detalle: detalle.trim(), monto: parseFloat(monto), proyecto });
       setDetalle(''); setMonto(''); setOtrosVal(''); setSelCat('');
       await cargar();
+      setSheet(false); // solo visual: cierra la hoja en celular
       toast(`Egreso registrado — S/ ${parseFloat(monto).toFixed(2)} · ${proyecto}`, 'success');
     } catch (e) { toast('Error al guardar: ' + (e.message || 'intenta de nuevo'), 'err'); }
     finally { setLoadingAdd(false); }
@@ -232,8 +237,14 @@ export default function Egresos() {
   const neto = balance.neto;
   const { porCategoria = {}, porProyecto = {} } = resumen;
 
+  // Solo visual: egresos agrupados por día (lista del celular), del más reciente al más antiguo
+  const gruposDia = [...egresos].reverse().reduce((acc, e) => {
+    (acc[e.fecha] ||= []).push(e);
+    return acc;
+  }, {});
+
   return (
-    <div className="page">
+    <div className="page page-egresos">
       {/* HEADER */}
       <div className="header">
         <div className="brand">
@@ -259,13 +270,15 @@ export default function Egresos() {
       )}
 
       {/* FILTRO FECHA */}
-      <FiltroFecha
-        periodo={periodo} setPeriodo={setPeriodo}
-        rangoDesde={rangoDesde} setRangoDesde={setRangoDesde}
-        rangoHasta={rangoHasta} setRangoHasta={setRangoHasta}
-        calcRango={calcRango} labelPeriodo={labelPeriodo}
-        onAplicar={cargar} toast={toast}
-      />
+      <div className="egr-filtro-fecha">
+        <FiltroFecha
+          periodo={periodo} setPeriodo={setPeriodo}
+          rangoDesde={rangoDesde} setRangoDesde={setRangoDesde}
+          rangoHasta={rangoHasta} setRangoHasta={setRangoHasta}
+          calcRango={calcRango} labelPeriodo={labelPeriodo}
+          onAplicar={cargar} toast={toast}
+        />
+      </div>
 
       {/* KPIs */}
       <div className="kpi-row tres">
@@ -319,7 +332,7 @@ export default function Egresos() {
 
       {/* FILTRO POR PROYECTO */}
       <div className="filtro-row">
-        <span className="filtro-label"><i className="ti ti-filter" style={{ fontSize: 13 }}></i> Ver:</span>
+        <span className="filtro-label"><i className="ti ti-folder" style={{ fontSize: 13 }}></i> Proyecto:</span>
         <div className="filtro-chips">
           <button className={`filtro-chip${filtroActivo === '__todos__' ? ' active' : ''}`} onClick={() => setFiltroActivo('__todos__')}>Todos</button>
           {proyectos.map(p => (
@@ -330,8 +343,15 @@ export default function Egresos() {
         </div>
       </div>
 
-      {/* FORM */}
-      <div className="form-card">
+      {/* FORM (en celular es una hoja que sube desde abajo) */}
+      <div className={`form-card egr-sheet${sheet ? ' abierto' : ''}`}>
+        <div className="egr-sheet-head">
+          <span>Nuevo egreso</span>
+          <button className="egr-sheet-x" onClick={() => setSheet(false)} aria-label="Cerrar">
+            <i className="ti ti-x"></i>
+          </button>
+        </div>
+
         <div className="form-card-title"><i className="ti ti-receipt-2"></i> Registrar egreso</div>
 
         {/* Proyecto con combobox */}
@@ -364,19 +384,19 @@ export default function Egresos() {
         )}
 
         <div className="fields-row">
-          <div className="field">
+          <div className="field egr-f-detalle">
             <label>Detalle (opcional)</label>
             <input type="text" placeholder="Ej: Grifo Repsol, Km 45" value={detalle}
               onChange={e => setDetalle(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && agregar()} />
           </div>
-          <div className="field">
+          <div className="field egr-f-monto">
             <label>Monto (S/)</label>
-            <input type="number" placeholder="0.00" min="0" step="0.01" value={monto}
+            <input type="number" inputMode="decimal" placeholder="0.00" min="0" step="0.01" value={monto}
               onChange={e => setMonto(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && agregar()} />
           </div>
-          <div className="field">
+          <div className="field egr-f-fecha">
             <label>Fecha</label>
             <input type="date" value={fecha} onChange={e => setFecha(e.target.value)} />
           </div>
@@ -387,7 +407,7 @@ export default function Egresos() {
         {formErr && <div className="form-error show">{formErr}</div>}
       </div>
 
-      {/* TABLE */}
+      {/* TABLE (escritorio) + LISTA (celular) */}
       <div className="table-card">
         <div className="table-head">
           <div className="table-title">
@@ -406,47 +426,83 @@ export default function Egresos() {
               <small>Agrega el primer gasto con el formulario de arriba</small>
             </div>
           ) : (
-            <table>
-              <thead>
-                <tr><th>#</th><th>Categoría</th><th>Detalle</th><th>Proyecto</th><th>Monto</th><th>Fecha</th><th></th></tr>
-              </thead>
-              <tbody>
-                {[...egresos].reverse().map((e, i) => (
-                  <tr key={e.id} className="row-in">
-                    <td style={{ color: '#9ca3af', fontSize: 12 }}>{egresos.length - i}</td>
-                    <td>
-                      <span className="pill" style={{ background: getBgCat(e.categoria), color: getColorCat(e.categoria) }}>
-                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: getColorCat(e.categoria), display: 'inline-block', flexShrink: 0 }}></span>
-                        {e.categoria}
-                      </span>
-                    </td>
-                    <td style={{ fontWeight: 500, color: '#111827' }}>{e.detalle || <span style={{ color: '#d1d5db' }}>—</span>}</td>
-                    <td>
-                      <span className="pill-proy">
-                        <i className="ti ti-folder" style={{ fontSize: 10 }}></i>
-                        {e.proyecto || 'General'}
-                      </span>
-                    </td>
-                    <td className="td-monto-red">S/ {parseFloat(e.monto).toFixed(2)}</td>
-                    <td style={{ color: '#9ca3af', fontSize: 12 }}>{fechaDisplay(e.fecha)}</td>
-                    <td style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                      <button className="btn-edit" onClick={() => abrirModal(e)} title="Editar">
-                        <i className="ti ti-pencil"></i>
-                      </button>
-                      <button className="btn-del" onClick={() => eliminarEgreso(e.id)} title="Eliminar">
-                        <i className="ti ti-trash"></i>
-                      </button>
-                    </td>
-                  </tr>
+            <>
+              <table className="egr-tabla">
+                <thead>
+                  <tr><th>#</th><th>Categoría</th><th>Detalle</th><th>Proyecto</th><th>Monto</th><th>Fecha</th><th></th></tr>
+                </thead>
+                <tbody>
+                  {[...egresos].reverse().map((e, i) => (
+                    <tr key={e.id} className="row-in">
+                      <td style={{ color: '#9ca3af', fontSize: 12 }}>{egresos.length - i}</td>
+                      <td>
+                        <span className="pill" style={{ background: getBgCat(e.categoria), color: getColorCat(e.categoria) }}>
+                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: getColorCat(e.categoria), display: 'inline-block', flexShrink: 0 }}></span>
+                          {e.categoria}
+                        </span>
+                      </td>
+                      <td style={{ fontWeight: 500, color: '#111827' }}>{e.detalle || <span style={{ color: '#d1d5db' }}>—</span>}</td>
+                      <td>
+                        <span className="pill-proy">
+                          <i className="ti ti-folder" style={{ fontSize: 10 }}></i>
+                          {e.proyecto || 'General'}
+                        </span>
+                      </td>
+                      <td className="td-monto-red">S/ {parseFloat(e.monto).toFixed(2)}</td>
+                      <td style={{ color: '#9ca3af', fontSize: 12 }}>{fechaDisplay(e.fecha)}</td>
+                      <td style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                        <button className="btn-edit" onClick={() => abrirModal(e)} title="Editar">
+                          <i className="ti ti-pencil"></i>
+                        </button>
+                        <button className="btn-del" onClick={() => eliminarEgreso(e.id)} title="Eliminar">
+                          <i className="ti ti-trash"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {/* Lista del celular: toca un gasto para editarlo */}
+              <div className="egr-lista">
+                {Object.entries(gruposDia).map(([dia, lista]) => (
+                  <div key={dia}>
+                    <div className="egr-dia">
+                      <span>{fechaDisplay(dia)}</span>
+                      <span>S/ {lista.reduce((a, x) => a + (parseFloat(x.monto) || 0), 0).toFixed(2)}</span>
+                    </div>
+                    {lista.map(e => (
+                      <div key={e.id} className="egr-item" onClick={() => abrirModal(e)}>
+                        <span className="egr-ico" style={{ background: getBgCat(e.categoria), color: getColorCat(e.categoria) }}>
+                          <i className={`ti ${iconCat(e.categoria)}`}></i>
+                        </span>
+                        <div className="egr-info">
+                          <div className="egr-titulo">{e.categoria}</div>
+                          <div className="egr-sub">
+                            {e.detalle && <span className="egr-detalle">{e.detalle}</span>}
+                            <span className="egr-proy"><i className="ti ti-folder"></i>{e.proyecto || 'General'}</span>
+                          </div>
+                        </div>
+                        <div className="egr-monto">- S/ {parseFloat(e.monto).toFixed(2)}</div>
+                        <button
+                          className="egr-del"
+                          aria-label="Eliminar"
+                          onClick={ev => { ev.stopPropagation(); if (window.confirm('¿Eliminar este egreso?')) eliminarEgreso(e.id); }}
+                        >
+                          <i className="ti ti-trash"></i>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+            </>
           )}
         </div>
       </div>
 
       {/* CHARTS */}
-      <div className="charts-row">
+      <div className={`charts-row${!egresos.length ? ' sin-datos' : ''}`}>
         <div className="chart-card">
           <div className="chart-title"><i className="ti ti-chart-donut"></i> Por categoría</div>
           <div className="chart-wrap"><canvas ref={donutRef}></canvas></div>
@@ -472,6 +528,14 @@ export default function Egresos() {
           </div>
         </div>
       </div>
+
+      {/* Botón + (solo celular) y fondo oscuro de la hoja */}
+      {sheet && <div className="egr-backdrop" onClick={() => setSheet(false)}></div>}
+      {!sheet && !modal && (
+        <button className="egr-fab" onClick={() => setSheet(true)} aria-label="Nuevo egreso">
+          <i className="ti ti-plus"></i>
+        </button>
+      )}
 
       {/* MODAL EDITAR */}
       {modal && (
@@ -518,7 +582,7 @@ export default function Egresos() {
               </div>
               <div className="modal-field">
                 <label>Monto (S/)</label>
-                <input type="number" placeholder="0.00" min="0" step="0.01" value={mMonto} onChange={e => setMMonto(e.target.value)} />
+                <input type="number" inputMode="decimal" placeholder="0.00" min="0" step="0.01" value={mMonto} onChange={e => setMMonto(e.target.value)} />
               </div>
               <div className="modal-field">
                 <label>Fecha</label>
