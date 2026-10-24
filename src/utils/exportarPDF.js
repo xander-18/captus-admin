@@ -682,7 +682,7 @@ function extrasSueltos(quote, etiquetaMO, negrita) {
 // }
 function filasSimple(quote, catalog) {
   const rows = [...lineasDe(quote, "equipos", catalog), ...lineasDe(quote, "accesorios", catalog)];
-  const extras = extrasSueltos(quote, "MANO DE OBRA", true); // antes: false
+  const extras = extrasSueltos(quote, "SERVICIO DE INSTALACION", true); // antes: false
   if (extras.length) rows.push({ t: "vacio" }, ...extras);
   return rows;
 }
@@ -1105,4 +1105,4 @@ export async function exportarPDFConCarpeta(quote, summary, catalog) {
 export async function previsualizarPDF(quote, summary, catalog) {
   const doc = await generarPDF(quote, summary, catalog);
   return URL.createObjectURL(doc.output("blob"));
-}
+} 
