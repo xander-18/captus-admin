@@ -643,7 +643,7 @@ const ajuste = (q, negrita) => {
   if (servicios.length) {
     const total = servicios.reduce((a, l) => a + l.monto, 0);
     rows.push(
-      { t: "item", qty: 1, nombre: "OTRO SERVICIOS", pu: total, bold: negrita },
+      { t: "item", qty: 1, nombre: "OTROS SERVICIOS", pu: total, bold: negrita },
       ...servicios.map((l) => ({ t: "detalle", texto: (l.descripcion || "").trim() || "Servicio adicional" }))
     );
   }

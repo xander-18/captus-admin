@@ -16,6 +16,7 @@ import {
   ArrowUpDown,
   GripVertical,
   Pencil,
+  Save,
 } from "lucide-react";
 import KitPicker from "../components/KitPicker";
 import ProductoSelect, { BuscadorProductos } from "../components/ProductoSelect";
@@ -23,6 +24,7 @@ import { PreviewModal, ExportModal } from "../components/ModalesCotizacion";
 import { useKits } from "../hooks/useKits";
 import { CATALOGO } from "../data/kits";
 import { exportarPDF, exportarPDFConCarpeta, plantillaDe } from "../utils/exportarPDF";
+import { getCarpetaExport } from "../utils/carpetaExport";
 import {
   duplicarCotizacion,
   tokens,
@@ -50,15 +52,13 @@ const blankLinea = () => ({ descripcion: "", monto: 0 });
 const sumaLineas = (arr) => (arr || []).reduce((a, l) => a + (l.monto > 0 ? l.monto : 0), 0);
 // Garantía en Términos y condiciones: el usuario decide si va y con qué texto exacto.
 const garantiaDefault = () => ({ activa: true, texto: "Garantía por servicio y equipos: 01 año" });
-// Descripciones largas no deben desbordar el resumen financiero.
-const ETIQUETA_LINEA = { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginRight: 8 };
 // Lo que carga un kit queda marcado (deKit): el PDF lo agrupa como KIT.
 // Todo equipo que se agregue después va como adicional. No hay nada que elegir.
 const marcarKit = (patch) =>
   patch.items?.equipos
     ? { ...patch, items: { ...patch.items, equipos: patch.items.equipos.map((it) => ({ ...it, deKit: true })) } }
     : patch;
-  
+
 // Escritorio = 768px o más. Por debajo, las columnas de costo arrancan ocultas.
 const esEscritorio = () =>
   typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches;
@@ -78,6 +78,54 @@ const margenDesdePrecio = (costo, precio) =>
   costo > 0 && precio > 0 ? (1 - (costo * IGV_F) / precio) * 100 : 0;
 // % vigente del ítem: el guardado, o el que sale del precio de catálogo si aún no se tocó
 const margenDe = (item) => item.margen ?? margenDesdePrecio(item.costo, item.precio);
+
+// ---------------------------------------------------------------------------
+// RESUMEN FINANCIERO: ÚNICA fuente de verdad de los totales.
+// La usan el editor, la lista, la vista previa y el PDF, así nunca pueden diferir.
+// Cada línea se redondea a céntimos, igual que lo que se imprime en el PDF.
+// ---------------------------------------------------------------------------
+function calcularResumen(q) {
+  const suma = (arr) =>
+    (arr || []).reduce(
+      (a, it) => ({
+        costo: a.costo + redondear((it.costo || 0) * (it.qty || 0)),
+        venta: a.venta + redondear((it.precio || 0) * (it.qty || 0)),
+      }),
+      { costo: 0, venta: 0 }
+    );
+  const eq = suma(q.items?.equipos);
+  const ac = suma(q.items?.accesorios);
+  const aprobada = (e) => (e?.required && e?.approval === "approved" ? e.value || 0 : 0);
+
+  const labor = q.laborApproval === "approved" ? q.laborValue || 0 : 0;
+  const transporte = aprobada(q.transporte);
+  const certificado = aprobada(q.certificado);
+  const servicios = sumaLineas(q.serviciosAdicionales);
+  const descuentos = sumaLineas(q.descuentos);
+
+  const costoTotal = redondear(eq.costo + ac.costo + labor + transporte + certificado);
+  const ventaTotal = redondear(
+    eq.venta + ac.venta + labor + transporte + certificado + servicios - descuentos + (q.ajusteGlobal || 0)
+  );
+  const margen = redondear(ventaTotal - costoTotal);
+
+  return {
+    costoEq: eq.costo,
+    ventaEq: eq.venta,
+    costoAc: ac.costo,
+    ventaAc: ac.venta,
+    labor,
+    transporte,
+    certificado,
+    servicios,
+    descuentos,
+    costoTotal,
+    ventaTotal,
+    margen,
+    margenPct: ventaTotal > 0 ? (margen / ventaTotal) * 100 : 0,
+    nItems: (q.items?.equipos?.length || 0) + (q.items?.accesorios?.length || 0),
+  };
+}
 
 // El número (0476-2026) lo asigna el servidor la primera vez que se guarda.
 function blankQuote() {
@@ -122,23 +170,9 @@ const fechaCorta = (iso) => {
 };
 
 // ---------------------------------------------------------------------------
-// CAMPO DE TEXTO que se corrige solo al salir del campo (mayúsculas/minúsculas,
-// espacios dobles, etc.). Se usa en todos los textos libres.
+// CAMPO DE TEXTO. Por defecto solo limpia espacios al salir del campo.
+// Con normalizar={true} además corrige mayúsculas/minúsculas.
 // ---------------------------------------------------------------------------
-// function CampoTexto({ value, onChange, ...props }) {
-//   return (
-//     <input
-//       type="text"
-//       {...props}
-//       value={value ?? ""}
-//       onChange={(e) => onChange(e.target.value)}
-//       onBlur={(e) => {
-//         const limpio = normalizarTexto(e.target.value);
-//         if (limpio !== e.target.value) onChange(limpio);
-//       }}
-//     />
-//   );
-// }
 function CampoTexto({ value, onChange, normalizar = false, ...props }) {
   return (
     <input
@@ -153,6 +187,7 @@ function CampoTexto({ value, onChange, normalizar = false, ...props }) {
     />
   );
 }
+
 // ---------------------------------------------------------------------------
 // COMPONENTE PRINCIPAL
 // ---------------------------------------------------------------------------
@@ -172,6 +207,8 @@ export default function CotizacionesApp() {
   const [busqueda, setBusqueda] = useState("");
   const [preview, setPreview] = useState(null);     // cotización que se está viendo
   const [exportando, setExportando] = useState(null); // cotización que se va a exportar
+  const [exportandoPDF, setExportandoPDF] = useState(null); // texto del loader mientras se genera el PDF, o null
+  const [aviso, setAviso] = useState("");           // mensaje breve de confirmación (toast)
 
   // Cargar la lista desde el servidor
   const cargar = () => {
@@ -183,6 +220,13 @@ export default function CotizacionesApp() {
       .finally(() => setCargando(false));
   };
   useEffect(cargar, []);
+
+  // El aviso de "guardado" desaparece solo
+  useEffect(() => {
+    if (!aviso) return;
+    const t = setTimeout(() => setAviso(""), 4000);
+    return () => clearTimeout(t);
+  }, [aviso]);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -249,15 +293,52 @@ export default function CotizacionesApp() {
     }
   };
 
+  // Una cotización nueva y vacía no se guarda (no gasta número)
+  const estaVaciaYNueva = () =>
+    !quotes.some((x) => x.id === quote.id) && summary.nItems === 0 && !quote.cliente && !quote.proyecto;
+
   const guardarYVolver = async () => {
-    // Una cotización nueva y vacía no se guarda (no gasta número)
-    const yaGuardada = quotes.some((x) => x.id === quote.id);
-    if (!yaGuardada && summary.nItems === 0 && !quote.cliente && !quote.proyecto) return setView("list");
+    if (estaVaciaYNueva()) return setView("list");
     try {
       await guardar();
       setView("list");
     } catch (e) {
       alert("No se pudo guardar: " + e.message);
+    }
+  };
+
+  // Botón GUARDAR: guarda en el sistema y, si hay una carpeta compartida configurada,
+  // deja también el PDF ahí (sin diálogo "Guardar como"). Sin carpeta, solo guarda en el sistema.
+  const guardarManual = async () => {
+    if (guardando || exportandoPDF) return;
+    if (estaVaciaYNueva()) {
+      setAviso("Agrega un cliente, un proyecto o algún equipo antes de guardar");
+      return;
+    }
+
+    // El permiso de la carpeta exige un clic reciente: se pide ANTES de ir al servidor.
+    let carpeta = null;
+    try { carpeta = await getCarpetaExport(); } catch { /* sin carpeta: solo se guarda en el sistema */ }
+
+    try {
+      const saved = await guardar();
+      setQuote(saved); // trae el número asignado
+      if (!carpeta) { setAviso("Cotización guardada"); return; }
+
+      setExportandoPDF("Guardando PDF en la carpeta compartida…");
+      const r = await exportarPDFConCarpeta(saved, calcularResumen(saved), catalog);
+      if (r.guardadoEnCarpeta) {
+        setAviso(`Guardada · PDF en «${carpeta.name}»`);
+      } else {
+        alert(
+          "La cotización se guardó, pero el PDF no se pudo guardar en la carpeta compartida (se descargó por el navegador en su lugar):\n" +
+            (r.error || "")
+        );
+      }
+    } catch (e) {
+      alert("No se pudo guardar: " + e.message);
+    } finally {
+      setExportandoPDF(null);
     }
   };
 
@@ -279,11 +360,13 @@ export default function CotizacionesApp() {
 
   // Exportar: guarda primero (así tiene número) y descarga, o guarda directo en la carpeta
   // compartida configurada (ver ModalesCotizacion/ExportModal), "<correlativo> - <nombre>.pdf".
+  // Mientras se genera el PDF se muestra un loader a pantalla completa.
   const confirmarExport = async (nombre, usarCarpeta) => {
+    setExportandoPDF("Exportando PDF…");
     try {
       const saved = await guardar({ ...exportando, nombreArchivo: nombre });
       if (quote.id === saved.id) setQuote(saved);
-      const resumen = resumenDe(saved);
+      const resumen = calcularResumen(saved);
       if (usarCarpeta) {
         const r = await exportarPDFConCarpeta(saved, resumen, catalog);
         if (!r.guardadoEnCarpeta && r.error) {
@@ -295,6 +378,8 @@ export default function CotizacionesApp() {
       setExportando(null);
     } catch (e) {
       alert("No se pudo guardar la cotización: " + e.message);
+    } finally {
+      setExportandoPDF(null);
     }
   };
 
@@ -400,26 +485,7 @@ export default function CotizacionesApp() {
     }
   };
 
-  const summary = useMemo(() => {
-    const suma = (arr) => arr.reduce((a, it) => ({ costo: a.costo + it.costo * it.qty, venta: a.venta + it.precio * it.qty }), { costo: 0, venta: 0 });
-    const eq = suma(quote.items.equipos);
-    const ac = suma(quote.items.accesorios);
-    const labor = quote.laborApproval === "approved" ? quote.laborValue : 0;
-    const extra = (e) => (e?.required && e?.approval === "approved" ? e.value : 0);
-    const transporte = extra(quote.transporte);
-    const certificado = extra(quote.certificado);
-    const servicios = sumaLineas(quote.serviciosAdicionales);
-    const descuentos = sumaLineas(quote.descuentos);
-    const costoTotal = eq.costo + ac.costo + labor + transporte + certificado;
-    const ventaTotal = eq.venta + ac.venta + labor + transporte + certificado + servicios - descuentos + (quote.ajusteGlobal || 0);
-    const margen = ventaTotal - costoTotal;
-    return {
-      costoEq: eq.costo, ventaEq: eq.venta, costoAc: ac.costo, ventaAc: ac.venta,
-      labor, transporte, certificado, servicios, descuentos, costoTotal, ventaTotal, margen,
-      margenPct: ventaTotal > 0 ? (margen / ventaTotal) * 100 : 0,
-      nItems: quote.items.equipos.length + quote.items.accesorios.length,
-    };
-  }, [quote]);
+  const summary = useMemo(() => calcularResumen(quote), [quote]);
 
   // Lista filtrada: busca en número, cliente, proyecto, RUC, dirección, kit y en cada producto.
   const toks = useMemo(() => tokens(busqueda), [busqueda]);
@@ -433,6 +499,7 @@ export default function CotizacionesApp() {
   const conKit = p === "caci" || p === "cerco";
   const vacia = summary.nItems === 0;
   const puedeAvanzar = (PUEDE_AVANZAR[quote.status] || []).includes(role);
+  const ocupado = guardando || !!exportandoPDF;
 
   return (
     <div className="app-root">
@@ -441,7 +508,7 @@ export default function CotizacionesApp() {
         <header className="topbar">
           <div className="topbar-left">
             {view === "editor" && (
-              <button className="back-btn" onClick={guardarYVolver} disabled={guardando} aria-label="Volver a lista">
+              <button className="back-btn" onClick={guardarYVolver} disabled={ocupado} aria-label="Volver a lista">
                 <ArrowLeft size={16} />
                 <span className="back-label">{guardando ? "Guardando…" : "Volver a lista"}</span>
               </button>
@@ -463,12 +530,15 @@ export default function CotizacionesApp() {
                     <button
                       className={`btn btn-status ${puedeAvanzar ? "btn-primary" : ""}`}
                       onClick={advanceStatus}
-                      disabled={!puedeAvanzar || guardando}
+                      disabled={!puedeAvanzar || ocupado}
                     >
                       {STATUS_BTN[quote.status]}
                     </button>
                   )}
-                  <button className="btn" onClick={() => setExportando(quote)} disabled={guardando}>
+                  <button className="btn" onClick={guardarManual} disabled={ocupado} title="Guardar la cotización (y el PDF en la carpeta compartida, si está configurada)">
+                    <Save size={16} /> {guardando ? "Guardando…" : "Guardar"}
+                  </button>
+                  <button className="btn" onClick={() => setExportando(quote)} disabled={ocupado}>
                     <FileDown size={16} /> Exportar
                   </button>
                 </>
@@ -541,7 +611,7 @@ export default function CotizacionesApp() {
                   </thead>
                   <tbody>
                     {filtradas.map((row) => {
-                      const s = resumenDe(row);
+                      const s = calcularResumen(row);
                       const hits = productosQueCoinciden(row, toks, catalog);
                       return (
                         <tr key={row.id} onClick={() => openQuote(row.id)}>
@@ -569,7 +639,7 @@ export default function CotizacionesApp() {
                             <button className="btn" title="Vista previa del PDF" onClick={() => setPreview(row)}>
                               <Eye size={14} />
                             </button>{" "}
-                            <button className="btn" title="Duplicar cotización" onClick={() => duplicar(row.id)} disabled={guardando}>
+                            <button className="btn" title="Duplicar cotización" onClick={() => duplicar(row.id)} disabled={ocupado}>
                               <Copy size={14} />
                             </button>
                           </td>
@@ -701,7 +771,7 @@ export default function CotizacionesApp() {
                 {/* Mano de obra + extras */}
                 <div className="card">
                   <div className="card-header labor-header">
-                    <span className="card-title">{esKit ? "Instalación" : "Mano de obra"}</span>
+                    <span className="card-title">{esKit ? "Instalación" : "Servicios de Instalacion"}</span>
                     <span className="card-amount">
                       {quote.laborApproval === "approved" ? fmt(quote.laborValue) : "S/ 0.00"}
                     </span>
@@ -793,14 +863,10 @@ export default function CotizacionesApp() {
                       placeholder="Ej. Materiales según demanda, tiempos de entrega sujetos a stock…"
                       value={quote.nota || ""}
                       onChange={(e) => updateField("nota", e.target.value)}
-                      // onBlur={(e) => {
-                      //   const limpio = normalizarTexto(e.target.value);
-                      //   if (limpio !== e.target.value) updateField("nota", limpio);
-                      // }}.
                       onBlur={(e) => {
-  const limpio = limpiarEspacios(e.target.value);
-  if (limpio !== e.target.value) updateField("nota", limpio);
-}}
+                        const limpio = limpiarEspacios(e.target.value);
+                        if (limpio !== e.target.value) updateField("nota", limpio);
+                      }}
                       style={{
                         width: "100%",
                         resize: "vertical",
@@ -842,14 +908,14 @@ export default function CotizacionesApp() {
                 </div>
               </div>
 
-              {/* RESUMEN */}
+              {/* RESUMEN FINANCIERO */}
               <aside className="summary-panel">
                 <div className="summary-title">Resumen financiero</div>
                 <div className="separator"></div>
 
                 <div className="block-label">Costos</div>
-                <div className="summary-line"><span>Equipos</span><span>{fmt(summary.costoEq)}</span></div>
-                <div className="summary-line"><span>{conKit ? "Materiales" : "Accesorios"}</span><span>{fmt(summary.costoAc)}</span></div>
+                <div className="summary-line"><span>Costos por equipos</span><span>{fmt(summary.costoEq)}</span></div>
+                <div className="summary-line"><span>Costos por {conKit ? "materiales" : "accesorios"}</span><span>{fmt(summary.costoAc)}</span></div>
                 <div className="summary-line"><span>{esKit ? "Instalación" : "Mano de obra"}</span><span>{fmt(summary.labor)}</span></div>
                 {quote.transporte?.required && (
                   <div className="summary-line"><span>Transporte</span><span>{fmt(summary.transporte)}</span></div>
@@ -861,7 +927,7 @@ export default function CotizacionesApp() {
 
                 <div className="separator spaced-sm"></div>
 
-                <div className="block-label">Venta</div>
+                <div className="block-label">Coste de venta</div>
                 <div className="summary-line"><span>Equipos</span><span>{fmt(summary.ventaEq)}</span></div>
                 <div className="summary-line"><span>{conKit ? "Materiales" : "Accesorios"}</span><span>{fmt(summary.ventaAc)}</span></div>
                 <div className="summary-line"><span>{esKit ? "Instalación" : "Mano de obra"}</span><span>{fmt(summary.labor)}</span></div>
@@ -872,18 +938,13 @@ export default function CotizacionesApp() {
                   <div className="summary-line"><span>Certificado</span><span>{fmt(summary.certificado)}</span></div>
                 )}
 
-                {(quote.serviciosAdicionales || []).map((l, i) => l.monto > 0 && (
-                  <div className="summary-line" key={`sa-${i}`}>
-                    <span style={ETIQUETA_LINEA}>{l.descripcion || "Servicio adicional"}</span>
-                    <span>{fmt(l.monto)}</span>
-                  </div>
-                ))}
-                {(quote.descuentos || []).map((l, i) => l.monto > 0 && (
-                  <div className="summary-line" key={`ds-${i}`}>
-                    <span style={ETIQUETA_LINEA}>{l.descripcion || "Descuento"}</span>
-                    <span>-{fmt(l.monto)}</span>
-                  </div>
-                ))}
+                {/* Solo la categoría, con su total. El detalle queda en el editor y en el PDF. */}
+                {summary.servicios > 0 && (
+                  <div className="summary-line"><span>Servicios adicionales</span><span>{fmt(summary.servicios)}</span></div>
+                )}
+                {summary.descuentos > 0 && (
+                  <div className="summary-line"><span>Descuentos</span><span>-{fmt(summary.descuentos)}</span></div>
+                )}
 
                 {/* Ajuste heredado: solo aparece en cotizaciones antiguas que ya lo tenían */}
                 {!!quote.ajusteGlobal && (
@@ -923,7 +984,7 @@ export default function CotizacionesApp() {
         {preview && (
           <PreviewModal
             quote={preview}
-            summary={resumenDe(preview)}
+            summary={calcularResumen(preview)}
             catalog={catalog}
             onClose={() => setPreview(null)}
             onEdit={openQuote}
@@ -939,20 +1000,76 @@ export default function CotizacionesApp() {
             onConfirm={confirmarExport}
           />
         )}
+
+        {/* LOADER: se muestra mientras se genera / guarda el PDF (queda por encima de los modales) */}
+        {exportandoPDF && (
+          <div
+            role="status"
+            aria-live="polite"
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 10000,
+              background: "rgba(15,23,42,.45)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <style>{"@keyframes girar{to{transform:rotate(360deg)}}"}</style>
+            <div
+              style={{
+                background: "#fff",
+                borderRadius: 12,
+                padding: "20px 28px",
+                display: "flex",
+                alignItems: "center",
+                gap: 14,
+                boxShadow: "0 10px 30px rgba(0,0,0,.25)",
+              }}
+            >
+              <div
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: "50%",
+                  border: "3px solid #e2e8f0",
+                  borderTopColor: "#4f46e5",
+                  animation: "girar .8s linear infinite",
+                }}
+              />
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 14 }}>{exportandoPDF}</div>
+                <div style={{ fontSize: 12, color: "#64748b" }}>Un momento, no cierres esta ventana.</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* AVISO breve de confirmación */}
+        {aviso && (
+          <div
+            role="status"
+            style={{
+              position: "fixed",
+              bottom: 20,
+              right: 20,
+              zIndex: 10000,
+              background: "#15803d",
+              color: "#fff",
+              padding: "10px 16px",
+              borderRadius: 8,
+              fontSize: 14,
+              boxShadow: "0 4px 14px rgba(0,0,0,.2)",
+            }}
+          >
+            <Check size={14} style={{ verticalAlign: "-2px", marginRight: 6 }} />
+            {aviso}
+          </div>
+        )}
       </div>
     </div>
   );
-}
-
-function resumenDe(q) {
-  const suma = (arr) => arr.reduce((a, it) => ({ c: a.c + it.costo * it.qty, v: a.v + it.precio * it.qty }), { c: 0, v: 0 });
-  const eq = suma(q.items.equipos), ac = suma(q.items.accesorios);
-  const labor = q.laborApproval === "approved" ? q.laborValue : 0;
-  const ex = (e) => (e?.required && e?.approval === "approved" ? e.value : 0);
-  const extras = labor + ex(q.transporte) + ex(q.certificado);
-  const costoTotal = eq.c + ac.c + extras;
-  const ventaTotal = eq.v + ac.v + extras + sumaLineas(q.serviciosAdicionales) - sumaLineas(q.descuentos) + (q.ajusteGlobal || 0);
-  return { costoTotal, ventaTotal, margenPct: ventaTotal > 0 ? ((ventaTotal - costoTotal) / ventaTotal) * 100 : 0 };
 }
 
 function ExtraCostRow({ label, field, data, onToggle, onChangeValue, onConfirm, role }) {
@@ -1467,7 +1584,7 @@ function ItemsCard({ title, cat, items, catalogItems, addItem, addCustomItem, re
         {catalogItems.length > 0 && (
           <>
             <button ref={addRef} className="add-btn" onClick={() => setAgregando((v) => !v)}>
-              <Plus size={14} /> Agregar {etiqueta} 
+              <Plus size={14} /> Agregar {etiqueta}
             </button>
             {agregando && (
               <BuscadorProductos

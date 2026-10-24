@@ -8,6 +8,11 @@
 // en Chrome / Edge y en un contexto seguro (https:// o localhost); si no está
 // disponible, soportaCarpetas() devuelve false y la app cae de vuelta a la
 // descarga normal del navegador (doc.save(...)).
+//
+// IMPORTANTE: un navegador no permite escribir una ruta en el código ("Z:\...").
+// La ruta la elige cada usuario una sola vez en el selector; el navegador guarda el
+// acceso y no vuelve a preguntar. Chrome no permite elegir la raíz de una unidad
+// (Z:\) ni carpetas del sistema; una subcarpeta como Z:\COTIZACIONES - NUEVA PLANTILLA sí.
 // -----------------------------------------------------------------------------
 
 const DB_NAME = "cotizaciones-fs";
@@ -48,11 +53,17 @@ export const soportaCarpetas = () =>
 
 // Abre el explorador de Windows para elegir la carpeta (ahí se navega hasta
 // Z:\COTIZACIONES - NUEVA PLANTILLA) y guarda el acceso para no preguntar de nuevo.
+// `id` hace que el navegador recuerde la última carpeta usada con este selector y
+// vuelva a abrirlo ahí; `startIn` es solo el punto de partida la primera vez.
 export async function elegirCarpetaExport() {
   if (!soportaCarpetas()) {
     throw new Error("Este navegador no permite elegir una carpeta de guardado. Usa Chrome o Edge.");
   }
-  const handle = await window.showDirectoryPicker({ mode: "readwrite" });
+  const handle = await window.showDirectoryPicker({
+    id: "cotizaciones-export",
+    mode: "readwrite",
+    startIn: "documents",
+  });
   await guardarHandle(handle);
   return handle;
 }
