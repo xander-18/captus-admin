@@ -680,9 +680,26 @@ function extrasSueltos(quote, etiquetaMO, negrita) {
 //   if (extras.length) rows.push({ t: "vacio" }, ...extras);
 //   return rows;
 // }
+// function filasSimple(quote, catalog) {
+//   const rows = [...lineasDe(quote, "equipos", catalog), ...lineasDe(quote, "accesorios", catalog)];
+//   const extras = extrasSueltos(quote, "SERVICIO DE INSTALACION", true); // antes: false
+//   if (extras.length) rows.push({ t: "vacio" }, ...extras);
+//   return rows;
+// }
 function filasSimple(quote, catalog) {
-  const rows = [...lineasDe(quote, "equipos", catalog), ...lineasDe(quote, "accesorios", catalog)];
-  const extras = extrasSueltos(quote, "SERVICIO DE INSTALACION", true); // antes: false
+  const eq = lineasDe(quote, "equipos", catalog);
+  const ac = lineasDe(quote, "accesorios", catalog);
+  const rows = [];
+
+  const bloque = (titulo, lista) => {
+    if (!lista.length) return;
+    if (rows.length) rows.push({ t: "vacio" });
+    rows.push({ t: "seccion", texto: titulo, valor: sumaFilas(lista) }, ...lista);
+  };
+  bloque("EQUIPOS PRINCIPALES", eq);
+  bloque("ACCESORIOS DE INSTALACIÓN", ac);
+
+  const extras = extrasSueltos(quote, "SERVICIO DE INSTALACION", true);
   if (extras.length) rows.push({ t: "vacio" }, ...extras);
   return rows;
 }
