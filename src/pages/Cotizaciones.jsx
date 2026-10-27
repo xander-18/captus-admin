@@ -83,6 +83,12 @@ const margenDe = (item) => item.margen ?? margenDesdePrecio(item.costo, item.pre
 // RESUMEN FINANCIERO: ÚNICA fuente de verdad de los totales.
 // La usan el editor, la lista, la vista previa y el PDF, así nunca pueden diferir.
 // Cada línea se redondea a céntimos, igual que lo que se imprime en el PDF.
+//
+// IGV opcional (checkbox "Agregar IGV (18%)", quote.aplicarIgv):
+//   subtotal   = suma de todo (antes del IGV agregado)
+//   igv        = 18% del subtotal, solo si el checkbox está marcado
+//   ventaTotal = subtotal + igv  → es el total final que ve el cliente
+// El margen se calcula sobre el subtotal: el IGV es un impuesto, no ganancia.
 // ---------------------------------------------------------------------------
 function calcularResumen(q) {
   const suma = (arr) =>
@@ -104,10 +110,12 @@ function calcularResumen(q) {
   const descuentos = sumaLineas(q.descuentos);
 
   const costoTotal = redondear(eq.costo + ac.costo + labor + transporte + certificado);
-  const ventaTotal = redondear(
+  const subtotal = redondear(
     eq.venta + ac.venta + labor + transporte + certificado + servicios - descuentos + (q.ajusteGlobal || 0)
   );
-  const margen = redondear(ventaTotal - costoTotal);
+  const igv = q.aplicarIgv ? redondear(subtotal * (IGV_F - 1)) : 0;
+  const ventaTotal = redondear(subtotal + igv);
+  const margen = redondear(subtotal - costoTotal);
 
   return {
     costoEq: eq.costo,
@@ -120,9 +128,11 @@ function calcularResumen(q) {
     servicios,
     descuentos,
     costoTotal,
+    subtotal,
+    igv,
     ventaTotal,
     margen,
-    margenPct: ventaTotal > 0 ? (margen / ventaTotal) * 100 : 0,
+    margenPct: subtotal > 0 ? (margen / subtotal) * 100 : 0,
     nItems: (q.items?.equipos?.length || 0) + (q.items?.accesorios?.length || 0),
   };
 }
@@ -141,6 +151,7 @@ function blankQuote() {
     status: "borrador",
     kitOrigen: null,
     mostrarIgv: false,   // solo en equipo simple: SUBTOTAL e IGV "si aplica"
+    aplicarIgv: false,   // checkbox: suma 18% de IGV al total final
     laborValue: 0,
     laborApproval: null,
     transporte: blankExtra(),
@@ -837,19 +848,6 @@ export default function CotizacionesApp() {
                     onRemove={removeLinea}
                     restar
                   />
-                  {/* {p === "simple" && (
-                    <>
-                      <div className="separator spaced"></div>
-                      <label className="extra-cost-toggle">
-                        <input
-                          type="checkbox"
-                          checked={!!quote.mostrarIgv}
-                          onChange={(e) => updateField("mostrarIgv", e.target.checked)}
-                        />
-                        Mostrar subtotal e IGV en el PDF
-                      </label>
-                    </>
-                  )} */}
                 </div>
 
                 {/* Nota y garantía: la nota sale en el PDF justo antes de Términos y condiciones */}
@@ -959,6 +957,25 @@ export default function CotizacionesApp() {
                       onChange={(e) => updateField("ajusteGlobal", parseFloat(e.target.value) || 0)}
                     />
                   </div>
+                )}
+
+                <div className="separator spaced-sm"></div>
+
+                {/* IGV opcional: solo se suma al total final si el usuario marca el checkbox */}
+                <label className="extra-cost-toggle">
+                  <input
+                    type="checkbox"
+                    checked={!!quote.aplicarIgv}
+                    onChange={(e) => updateField("aplicarIgv", e.target.checked)}
+                  />
+                  Agregar IGV (18%)
+                </label>
+
+                {quote.aplicarIgv && (
+                  <>
+                    <div className="summary-line"><span>Subtotal</span><span>{fmt(summary.subtotal)}</span></div>
+                    <div className="summary-line"><span>IGV (18%)</span><span>{fmt(summary.igv)}</span></div>
+                  </>
                 )}
 
                 <div className="summary-line total primary">

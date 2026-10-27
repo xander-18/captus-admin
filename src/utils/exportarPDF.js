@@ -650,7 +650,7 @@ const aprobado = (e) => e?.required && e?.approval === "approved" && e.value > 0
 const manoDeObra = (q) => (q.laborApproval === "approved" ? q.laborValue || 0 : 0);
 const nombreKit = (q) => (q.proyecto || q.kitOrigen || "Kit").trim();
 // Servicios adicionales y descuentos que escribió el usuario (solo líneas con monto > 0), más el ajuste
-// heredado de cotizaciones antiguas. Estas filas deben sumar exactamente lo que entra en summary.ventaTotal.
+// heredado de cotizaciones antiguas. Estas filas deben sumar exactamente lo que entra en summary.subtotal.
 const ajuste = (q, negrita) => {
   const servicios = (q.serviciosAdicionales || []).filter((l) => l.monto > 0);
   const descuentos = (q.descuentos || []).filter((l) => l.monto > 0);
@@ -845,8 +845,10 @@ function condiciones(quote, p) {
     "Validez de la cotización: 05 días calendario.",
   ];
 
+  // Checkbox "Agregar IGV (18%)": el total ya incluye el IGV sumado
+  const igv = quote.aplicarIgv ? ["El monto total incluye IGV (18%)."] : [];
   const g = garantiaLinea(quote, p);
-  return g ? [...base, g] : base;
+  return [...base, ...igv, ...(g ? [g] : [])];
 }
 
 // ---------------------------------------------------------------------------
@@ -944,7 +946,8 @@ function dibujarDatos(doc, quote, y0) {
 
 const TAM = (c) => (c ? { fs: 8, fsInc: 7.5, lh: 3.8, vacio: 2, pad: 0.5 } : { fs: 9, fsInc: 8.5, lh: 4.6, vacio: 3, pad: 0.8 });
 
-function dibujarTabla(doc, rows, total, conIgv, y0, logo, quote, t) {
+// `desglose` = { sub, igv } o null. Si viene, se dibujan "Subtotal sin IGV" e "IGV (18%)" encima del TOTAL.
+function dibujarTabla(doc, rows, total, desglose, y0, logo, quote, t) {
   let y = y0, n = 0;
   doc.setLineHeightFactor(t.lh / (t.fs * 0.3528));
 
@@ -1011,14 +1014,13 @@ function dibujarTabla(doc, rows, total, conIgv, y0, logo, quote, t) {
   // Cierre de la tabla + totales (siempre)
   linea();
   y += 4;
-  if (y + (conIgv ? 11 : 0) + 9 > FOOTER_SAFE_Y) { pagina(); y += 2; }
+  if (y + (desglose ? 11 : 0) + 9 > FOOTER_SAFE_Y) { pagina(); y += 2; }
 
   doc.setTextColor(0);
   const xEt = COL.tot - 5;
-  if (conIgv) {
-    const sub = total / IGV;
+  if (desglose) {
     doc.setFont("helvetica", "normal"); doc.setFontSize(9);
-    [["Subtotal sin IGV", sub], ["IGV (18%)", total - sub]].forEach(([et, v]) => {
+    [["Subtotal sin IGV", desglose.sub], ["IGV (18%)", desglose.igv]].forEach(([et, v]) => {
       doc.text(et, xEt, y + 3.5, { align: "right" });
       doc.text("S/ " + n2(v), R - 2, y + 3.5, { align: "right" });
       y += 5.5;
@@ -1110,10 +1112,18 @@ function construir(quote, summary, catalog, logo, compacto) {
   const rows = p === "simple" ? filasSimple(quote, catalog)
     : p === "alarma" ? filasAlarma(quote, catalog)
     : filasProyecto(quote, catalog, p);
-  const conIgv = p === "simple" && !!quote.mostrarIgv;
+
+  // Desglose Subtotal / IGV encima del TOTAL:
+  // - aplicarIgv (checkbox "Agregar IGV (18%)"): el IGV se SUMÓ al subtotal; ambos salen de summary.
+  // - mostrarIgv (antiguo, solo equipo simple): el IGV ya venía incluido en el total y solo se separa.
+  const desglose = quote.aplicarIgv
+    ? { sub: summary.subtotal, igv: summary.igv }
+    : p === "simple" && quote.mostrarIgv
+      ? { sub: summary.ventaTotal / IGV, igv: summary.ventaTotal - summary.ventaTotal / IGV }
+      : null;
 
   // El total sale de summary: una sola fuente de verdad.
-  const yFin = dibujarTabla(doc, rows, summary.ventaTotal, conIgv, y, logo, quote, TAM(compacto));
+  const yFin = dibujarTabla(doc, rows, summary.ventaTotal, desglose, y, logo, quote, TAM(compacto));
   const yNota = dibujarNota(doc, yFin, logo, quote, compacto);
   dibujarCierre(doc, yNota, logo, quote, p, compacto);
   dibujarPies(doc);
@@ -1174,4 +1184,4 @@ export async function exportarPDFConCarpeta(quote, summary, catalog) {
 export async function previsualizarPDF(quote, summary, catalog) {
   const doc = await generarPDF(quote, summary, catalog);
   return URL.createObjectURL(doc.output("blob"));
-} 
+}
