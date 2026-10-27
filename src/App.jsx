@@ -49,14 +49,15 @@ export default function App() {
                       <Route path="/seguridad/usuario-roles" element={<Usuarioroles />} />
                       <Route path="/seguridad/usuarios" element={<Usuarios />} /> */}
                       {/* Seguridad */}
-<Route path="/seguridad/modulos" element={<Modulos />} />
-<Route path="/seguridad/privilegios" element={<Privilegios />} />
+                      <Route path="/seguridad/modulos" element={<Modulos />} />
+                      <Route path="/seguridad/privilegios" element={<Privilegios />} />
 
-<Route path="/seguridad/roles" element={<Roles />} />
-<Route path="/seguridad/roles/:id/privilegios" element={<RolPrivilegios />} />
+                      <Route path="/seguridad/roles" element={<Roles />} />
+                      <Route path="/seguridad/roles/:id/privilegios" element={<RolPrivilegios />} />
 
-<Route path="/seguridad/usuarios" element={<Usuarios />} />
-<Route path="/seguridad/usuarios/:id/roles" element={<Usuarioroles />} />
+                      <Route path="/seguridad/usuarios" element={<Usuarios />} />
+                      {/* <Route path="/seguridad/usuarios/:id/roles" element={<Usuarioroles />} /> */}
+                      <Route path="/usuario/:id" element={<Usuarioroles />} />
                     </Routes>
                   </Layout>
                 </ProtectedRoute>

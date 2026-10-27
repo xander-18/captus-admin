@@ -136,7 +136,8 @@ export default function Usuarios() {
                       </td>
                     ))}
                     <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                      <Link className="sg-btn small" to={`/seguridad/usuarios/${row.id}/roles`}>Roles</Link>
+                      {/* <Link className="sg-btn small" to={`/seguridad/usuarios/${row.id}/roles`}>Roles</Link> */}
+                      <Link className="sg-btn small" to={`/usuario/${row.id}`}>Roles</Link>
                       
                       <button type="button" className="btn-edit" onClick={() => openModal(row)} title="Editar">
                         <i className="fas fa-pen"></i>
@@ -153,7 +154,8 @@ export default function Usuarios() {
         </div>
       </div>
 
-<Dialog open={modalOpen} onClose={closeModal} slotProps={{ paper: { className: 'modal' } }}>        <div className="modal-title">
+<Dialog open={modalOpen} onClose={closeModal} slotProps={{ paper: { className: 'modal' } }}>        
+  <div className="modal-title">
           <i className={editingId ? 'fas fa-edit' : 'fas fa-plus-circle'}></i>
           {editingId ? 'Editar Usuario' : 'Nuevo Usuario'}
         </div>

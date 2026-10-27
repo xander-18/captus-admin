@@ -1,54 +1,58 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-// import { usuariosApi, rolesApi, getUsuarioRoles, setUsuarioRoles } from '../../api';
+import { getUsuario, getRoles, getUsuarioRoles, asignarRol, quitarRol } from '../../api';
 
 export default function UsuarioRoles() {
   const { id } = useParams();
   const [usuario, setUsuario] = useState(null);
   const [roles, setRoles] = useState([]);
-  const [sel, setSel] = useState(new Set());
+  const [asignados, setAsignados] = useState(new Set());
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving] = useState(null); // id del rol que se está actualizando
   const [error, setError] = useState('');
-  const [ok, setOk] = useState('');
 
-//   useEffect(() => {
-//   (async () => {
-//     try {
-//       const [users, rls, asignados] = await Promise.all([
-//         getUsuarios(), getRoles(), getUsuarioRoles(id),
-//       ]);
-//       setUsuario(users.find(u => String(u.id) === String(id)) || null);
-//       setRoles(rls);
-//       setSel(new Set(asignados));
-//     } catch (e) {
-//       setError(e.message || 'No se pudo cargar');
-//     } finally {
-//       setLoading(false);
-//     }
-//   })();
-// }, [id]);
-
-  const toggle = (rid) =>
-    setSel((prev) => {
-      const n = new Set(prev);
-      n.has(rid) ? n.delete(rid) : n.add(rid);
-      return n;
-    });
-
-  async function guardar() {
-    setSaving(true); setError(''); setOk('');
+  const cargar = async () => {
+    setLoading(true);
+    setError('');
     try {
-      await setUsuarioRoles(id, [...sel]);
-      setOk('Roles guardados');
+      const [u, todosLosRoles, rolesDelUsuario] = await Promise.all([
+        getUsuario(id),
+        getRoles(),
+        getUsuarioRoles(id),
+      ]);
+      setUsuario(u);
+      setRoles(todosLosRoles);
+      setAsignados(new Set(rolesDelUsuario.map(r => r.id)));
     } catch (e) {
-      setError(e.message || 'No se pudo guardar');
+      setError(e.message || 'No se pudo cargar la información');
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
-  }
+  };
 
-  if (loading) return <div className="sg-page"><div className="sg-empty">Cargando…</div></div>;
+  useEffect(() => { cargar(); }, [id]);
+
+  const toggle = async (rol) => {
+    const yaAsignado = asignados.has(rol.id);
+    setSaving(rol.id);
+    try {
+      if (yaAsignado) await quitarRol(id, rol.id);
+      else await asignarRol(id, rol.id);
+      setAsignados(prev => {
+        const next = new Set(prev);
+        yaAsignado ? next.delete(rol.id) : next.add(rol.id);
+        return next;
+      });
+    } catch (e) {
+      alert(e.message || 'No se pudo actualizar el rol');
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  if (loading) {
+    return <div className="sg-page"><div className="sg-empty">Cargando…</div></div>;
+  }
 
   return (
     <div className="sg-page">
@@ -58,25 +62,23 @@ export default function UsuarioRoles() {
       </div>
 
       {error && <div className="sg-error" role="alert">{error}</div>}
-      {ok && <div className="sg-ok" role="status">{ok}</div>}
 
       <section className="sg-group">
         <div className="sg-checks">
           {roles.length === 0 && <div className="sg-empty">No hay roles creados.</div>}
-          {roles.map((r) => (
+          {roles.map(r => (
             <label key={r.id} className="sg-check">
-              <input type="checkbox" checked={sel.has(r.id)} onChange={() => toggle(r.id)} />
+              <input
+                type="checkbox"
+                checked={asignados.has(r.id)}
+                disabled={saving === r.id}
+                onChange={() => toggle(r)}
+              />
               <span>{r.name}<small>{r.description}</small></span>
             </label>
           ))}
         </div>
       </section>
-
-      <div className="sg-sticky">
-        <button className="sg-btn primary" onClick={guardar} disabled={saving}>
-          {saving ? 'Guardando…' : 'Guardar cambios'}
-        </button>
-      </div>
     </div>
   );
 }

@@ -72,11 +72,17 @@ const esEscritorio = () =>
 const IGV_F = 1.18;
 const redondear = (n) => Math.round(n * 100) / 100;
 // % (estilo Excel) → precio de venta con IGV
-const precioDesdeMargen = (costo, m) => redondear((costo / (1 - m / 100)) * IGV_F);
+// const precioDesdeMargen = (costo, m) => redondear((costo / (1 - m / 100)) * IGV_F);
+// Tu fórmula de Excel: =E63*35%+E63  →  costo * (1 + %)
+const precioDesdeMargen = (costo, m) => redondear(costo * (1 + m / 100) * IGV_F);
 // precio de venta con IGV → % (estilo Excel) que lo produce
+// const margenDesdePrecio = (costo, precio) =>
+//   costo > 0 && precio > 0 ? (1 - (costo * IGV_F) / precio) * 100 : 0;
+// // % vigente del ítem: el guardado, o el que sale del precio de catálogo si aún no se tocó
 const margenDesdePrecio = (costo, precio) =>
-  costo > 0 && precio > 0 ? (1 - (costo * IGV_F) / precio) * 100 : 0;
-// % vigente del ítem: el guardado, o el que sale del precio de catálogo si aún no se tocó
+  costo > 0 && precio > 0 ? (precio / (costo * IGV_F) - 1) * 100 : 0;
+
+
 const margenDe = (item) => item.margen ?? margenDesdePrecio(item.costo, item.precio);
 
 // ---------------------------------------------------------------------------
@@ -1381,7 +1387,8 @@ function ItemsCard({ title, cat, items, catalogItems, addItem, addCustomItem, re
                         step="0.01"
                         value={Number(margenActual.toFixed(3))}
                         onChange={(e) => updateItem(cat, i, "margen", e.target.value)}
-                        title={`CU.NETO venta = ${cuTotalCompra.toFixed(2)} / (1 - ${margenActual.toFixed(3)}%) = ${(cuTotalCompra / (1 - margenActual / 100)).toFixed(2)}`}
+                        // title={`CU.NETO venta = ${cuTotalCompra.toFixed(2)} / (1 - ${margenActual.toFixed(3)}%) = ${(cuTotalCompra / (1 - margenActual / 100)).toFixed(2)}`}
+                      title={`CU.NETO venta = ${cuTotalCompra.toFixed(2)} × (1 + ${margenActual.toFixed(3)}%) = ${(cuTotalCompra * (1 + margenActual / 100)).toFixed(2)}`}
                       />
                     </td>
                   );

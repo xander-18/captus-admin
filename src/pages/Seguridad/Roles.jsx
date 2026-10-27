@@ -135,7 +135,7 @@ export default function Roles() {
         </div>
       </div>
 
-      <Dialog open={modalOpen} onClose={closeModal} PaperProps={{ className: 'modal' }}>
+      <Dialog open={modalOpen} onClose={closeModal} slotProps={{ paper: { className: 'modal' } }}>        
         <div className="modal-title">
           <i className={editingId ? 'fas fa-edit' : 'fas fa-plus-circle'}></i>
           {editingId ? 'Editar Rol' : 'Nuevo Rol'}

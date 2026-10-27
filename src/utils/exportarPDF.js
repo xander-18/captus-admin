@@ -731,7 +731,8 @@ function filasSimple(quote, catalog) {
     rows.push({ t: "seccion", texto: titulo, valor: sumaFilas(prods) }, ...prods);
   };
   bloque("EQUIPOS PRINCIPALES", eq);
-  bloque("ACCESORIOS DE INSTALACIÓN", ac);
+  // bloque("ACCESORIOS DE INSTALACIÓN", ac);
+  bloque("MATERIALES DE INSTALACIÓN", ac);
 
   const servicios = serviciosDe(eq, ac);
   if (servicios.length) {
