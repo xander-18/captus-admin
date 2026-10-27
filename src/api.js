@@ -92,3 +92,33 @@ export const deleteMovimiento = (id)           => apiFetch(`/api/movimientos/${i
 // Cotizaciones
 export const getCotizaciones = ()  => apiFetch('/api/cotizaciones');
 export const putCotizacion   = (q) => apiFetch(`/api/cotizaciones/${q.id}`, { method: 'PUT', body: JSON.stringify(q) });
+
+// Usuarios
+export const getUsuarios   = ()         => apiFetch('/api/usuarios');
+export const postUsuario   = (data)     => apiFetch('/api/usuarios', { method: 'POST', body: JSON.stringify(data) });
+export const putUsuario    = (id, data) => apiFetch(`/api/usuarios/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+export const deleteUsuario = (id)       => apiFetch(`/api/usuarios/${id}`, { method: 'DELETE' });
+
+// Módulos
+export const getModulos   = ()         => apiFetch('/api/modulos');
+export const postModulo   = (data)     => apiFetch('/api/modulos', { method: 'POST', body: JSON.stringify(data) });
+export const putModulo    = (id, data) => apiFetch(`/api/modulos/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+export const deleteModulo = (id)       => apiFetch(`/api/modulos/${id}`, { method: 'DELETE' });
+
+// Roles
+export const getRoles   = ()         => apiFetch('/api/roles');
+export const postRol    = (data)     => apiFetch('/api/roles', { method: 'POST', body: JSON.stringify(data) });
+export const putRol     = (id, data) => apiFetch(`/api/roles/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+export const deleteRol  = (id)       => apiFetch(`/api/roles/${id}`, { method: 'DELETE' });
+
+// Privilegios
+export const getPrivilegios   = ()         => apiFetch('/api/privilegios');
+export const postPrivilegio   = (data)     => apiFetch('/api/privilegios', { method: 'POST', body: JSON.stringify(data) });
+export const putPrivilegio    = (id, data) => apiFetch(`/api/privilegios/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+export const deletePrivilegio = (id)       => apiFetch(`/api/privilegios/${id}`, { method: 'DELETE' });
+
+// Asignaciones (devuelven y reciben un array de ids)
+export const getRolPrivilegios = (rolId)      => apiFetch(`/api/roles/${rolId}/privilegios`);
+export const setRolPrivilegios = (rolId, ids) => apiFetch(`/api/roles/${rolId}/privilegios`, { method: 'PUT', body: JSON.stringify({ ids }) });
+export const getUsuarioRoles   = (userId)      => apiFetch(`/api/usuarios/${userId}/roles`);
+export const setUsuarioRoles   = (userId, ids) => apiFetch(`/api/usuarios/${userId}/roles`, { method: 'PUT', body: JSON.stringify({ ids }) });

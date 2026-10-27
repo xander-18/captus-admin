@@ -1450,3 +1450,129 @@ input[placeholder^="Escribe para buscar"]:focus {
   /* El aviso verde/rojo debe verse por encima de las hojas */
   .toast-wrap { z-index: 1400; }
 }
+
+.nav-group-toggle { font-family: inherit; }
+.nav-group-toggle .nav-chevron {
+  margin-left: auto;
+  color: #9ca3af;
+  transition: transform .2s ease;
+}
+.nav-group-toggle .nav-chevron.open { transform: rotate(180deg); }
+.nav-group-toggle.has-active { color: #1a56db; }
+.nav-group-toggle.has-active .nav-chevron { color: #1a56db; }
+
+/* Despliegue animado (alto 0 → auto) */
+.nav-submenu {
+  display: grid;
+  grid-template-rows: 0fr;
+  visibility: hidden;
+  transition: grid-template-rows .22s ease, visibility 0s linear .22s;
+}
+.nav-submenu.open {
+  grid-template-rows: 1fr;
+  visibility: visible;
+  transition: grid-template-rows .22s ease, visibility 0s;
+}
+.nav-submenu-inner {
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-left: 21px;
+  padding-left: 8px;
+  border-left: 1px solid #e5e7eb;
+}
+.nav-submenu.open .nav-submenu-inner { margin-top: 2px; margin-bottom: 2px; }
+
+.nav-subitem { padding: 7px 10px; font-size: 12.5px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-submenu, .nav-group-toggle .nav-chevron { transition: none; }
+}
+/* =====================================================================
+   SEGURIDAD (pages/Seguridad)
+   ===================================================================== */
+
+/* Textarea y ayuda dentro de los modales */
+.modal-field textarea {
+  width: 100%;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 13px;
+  color: #111827;
+  font-family: 'Inter', sans-serif;
+  outline: none;
+  resize: vertical;
+  transition: border-color .15s;
+}
+.modal-field textarea:focus { border-color: #1a56db; }
+.modal-hint { display: block; margin-top: 4px; font-size: 11px; color: #9ca3af; }
+
+/* Privilegios por rol */
+.sg-page { max-width: 1100px; margin: 0 auto; }
+.sg-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+.sg-head h1 { font-size: 18px; font-weight: 600; color: #111827; }
+
+.sg-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 8px;
+  padding: 8px 14px; font-size: 13px; font-weight: 500; color: #374151;
+  font-family: 'Inter', sans-serif; text-decoration: none; cursor: pointer; white-space: nowrap;
+  transition: border-color .15s, color .15s, background .15s;
+}
+.sg-btn:hover { border-color: #1a56db; color: #1a56db; }
+.sg-btn.small { padding: 5px 10px; font-size: 12px; }
+.sg-btn.primary { background: #1a56db; border-color: #1a56db; color: #fff; font-weight: 600; }
+.sg-btn.primary:hover { background: #1648c8; border-color: #1648c8; color: #fff; }
+.sg-btn:disabled { background: #9ca3af; border-color: #9ca3af; color: #fff; cursor: not-allowed; }
+
+.sg-error, .sg-ok { padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 14px; }
+.sg-error { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; }
+.sg-ok    { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; }
+
+.sg-empty {
+  background: #fff; border: 1px dashed #d1d5db; border-radius: 12px;
+  padding: 36px 20px; text-align: center; font-size: 13px; color: #9ca3af; margin-bottom: 18px;
+}
+
+.sg-group { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; margin-bottom: 14px; overflow: hidden; }
+.sg-group-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 12px 18px; background: #fafafa; border-bottom: 1px solid #f3f4f6;
+  font-size: 13px; font-weight: 600; color: #374151;
+}
+.sg-checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 4px 12px; padding: 12px 18px; }
+.sg-check { display: flex; align-items: flex-start; gap: 10px; padding: 8px 6px; border-radius: 8px; cursor: pointer; font-size: 13px; color: #374151; }
+.sg-check:hover { background: #f9fafb; }
+.sg-check input { width: 16px; height: 16px; margin-top: 2px; accent-color: #1a56db; flex-shrink: 0; }
+.sg-check span { display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; }
+.sg-check small { font-size: 11px; color: #9ca3af; margin-top: 1px; }
+
+.sg-sticky {
+  position: sticky; bottom: 0; z-index: 5;
+  display: flex; justify-content: flex-end;
+  padding: 12px 0 calc(12px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(to top, #f5f6fa 70%, rgba(245, 246, 250, 0));
+}
+
+@media (max-width: 767px) {
+  .sg-page { padding: 12px 12px 0; }
+  .sg-checks { grid-template-columns: 1fr; padding: 8px 12px; }
+  .sg-check { min-height: 44px; align-items: center; }
+  .sg-sticky .sg-btn { width: 100%; min-height: 46px; }
+}
+/* =====================================================================
+   SEGURIDAD – Usuarios / Roles / Privilegios
+   ===================================================================== */
+.sg-tag { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; white-space: nowrap; }
+.sg-tag.on  { background: #ecfdf5; color: #065f46; }
+.sg-tag.off { background: #f3f4f6; color: #6b7280; }
+
+.modal-field .modal-check { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 13px; color: #374151; font-weight: 500; cursor: pointer; }
+.modal-field .modal-check input { width: 16px; height: 16px; padding: 0; accent-color: #1a56db; flex-shrink: 0; }
+
+/* Botón "Roles" / "Privilegios" junto a editar y eliminar */
+.table-card td .sg-btn.small { margin-right: 6px; }
+

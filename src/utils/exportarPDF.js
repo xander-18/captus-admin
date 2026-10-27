@@ -609,14 +609,30 @@ function nombreItem(item, cat, catalog) {
 // Equipos principales, Accesorios, Mano de obra, Transporte y Certificado.
 // ---------------------------------------------------------------------------
 // Cada línea trae `incluye` si el producto del catálogo declara su contenido interno.
+// const lineasDe = (quote, cat, catalog) =>
+//   (quote.items[cat] || []).map((it) => {
+//     const prod = (catalog[cat] || []).find((x) => x.id === it.pid);
+//     return {
+//       t: "item", qty: it.qty, nombre: nombreItem(it, cat, catalog), pu: it.precio,
+//       deKit: !!it.deKit, incluye: prod?.incluye,
+//     };
+//   });
+
+const ES_SERVICIO = /^\s*(servicio|mano de obra|mantenimiento|instalaci[oó]n|certificado|transporte)/i;
+
 const lineasDe = (quote, cat, catalog) =>
   (quote.items[cat] || []).map((it) => {
     const prod = (catalog[cat] || []).find((x) => x.id === it.pid);
+    const nombre = nombreItem(it, cat, catalog);
     return {
-      t: "item", qty: it.qty, nombre: nombreItem(it, cat, catalog), pu: it.precio,
+      t: "item", qty: it.qty, nombre, pu: it.precio,
       deKit: !!it.deKit, incluye: prod?.incluye,
+      servicio: prod?.marca === "Servicios" || ES_SERVICIO.test(nombre),
     };
   });
+
+const serviciosDe = (...listas) =>
+  listas.flat().filter((r) => r.servicio).map((r) => ({ ...r, nombre: r.nombre.toUpperCase() }));
 // Kit = equipos que cargó el kit. Lo agregado después = adicionales. Sin marcas, todo es kit.
 const partirEquipos = (eq) => {
   const hayKit = eq.some((r) => r.deKit);
@@ -686,27 +702,59 @@ function extrasSueltos(quote, etiquetaMO, negrita) {
 //   if (extras.length) rows.push({ t: "vacio" }, ...extras);
 //   return rows;
 // }
+// function filasSimple(quote, catalog) {
+//   const eq = lineasDe(quote, "equipos", catalog);
+//   const ac = lineasDe(quote, "accesorios", catalog);
+//   const rows = [];
+
+//   const bloque = (titulo, lista) => {
+//     if (!lista.length) return;
+//     if (rows.length) rows.push({ t: "vacio" });
+//     rows.push({ t: "seccion", texto: titulo, valor: sumaFilas(lista) }, ...lista);
+//   };
+//   bloque("EQUIPOS PRINCIPALES", eq);
+//   bloque("ACCESORIOS DE INSTALACIÓN", ac);
+
+//   const extras = extrasSueltos(quote, "SERVICIO DE INSTALACION", true);
+//   if (extras.length) rows.push({ t: "vacio" }, ...extras);
+//   return rows;
+// }
 function filasSimple(quote, catalog) {
   const eq = lineasDe(quote, "equipos", catalog);
   const ac = lineasDe(quote, "accesorios", catalog);
   const rows = [];
 
   const bloque = (titulo, lista) => {
-    if (!lista.length) return;
+    const prods = lista.filter((r) => !r.servicio);
+    if (!prods.length) return; // solo servicios → no hay título de sección
     if (rows.length) rows.push({ t: "vacio" });
-    rows.push({ t: "seccion", texto: titulo, valor: sumaFilas(lista) }, ...lista);
+    rows.push({ t: "seccion", texto: titulo, valor: sumaFilas(prods) }, ...prods);
   };
   bloque("EQUIPOS PRINCIPALES", eq);
   bloque("ACCESORIOS DE INSTALACIÓN", ac);
 
+  const servicios = serviciosDe(eq, ac);
+  if (servicios.length) {
+    if (rows.length) rows.push({ t: "vacio" });
+    rows.push(...servicios);
+  }
+
   const extras = extrasSueltos(quote, "SERVICIO DE INSTALACION", true);
-  if (extras.length) rows.push({ t: "vacio" }, ...extras);
+  if (extras.length) {
+    if (rows.length) rows.push({ t: "vacio" });
+    rows.push(...extras);
+  }
   return rows;
 }
 // KIT / ALARMA: lo que cargó el kit = KIT (precio fijo + incluye); lo agregado después y los accesorios = adicionales.
 function filasAlarma(quote, catalog) {
-  const { kit, adic } = partirEquipos(lineasDe(quote, "equipos", catalog));
-  const rows = [{ t: "seccion", texto: "EQUIPOS ALARMA COMUNITARIA" }];
+  const eqAll = lineasDe(quote, "equipos", catalog);
+  const acAll = lineasDe(quote, "accesorios", catalog);
+  const { kit, adic } = partirEquipos(eqAll.filter((r) => !r.servicio));
+  const ac = acAll.filter((r) => !r.servicio);
+  const rows = [];
+
+  if (kit.length || adic.length || ac.length) rows.push({ t: "seccion", texto: "EQUIPOS ALARMA COMUNITARIA" });
   if (kit.length) {
     const det = detalleKit(kit);
     rows.push({ t: "item", qty: 1, nombre: nombreKit(quote), pu: sumaFilas(kit) });
@@ -715,9 +763,13 @@ function filasAlarma(quote, catalog) {
       ...det.map((texto) => ({ t: "incluye", texto }))
     );
   }
-  rows.push(...adic, ...lineasDe(quote, "accesorios", catalog));
+  rows.push(...adic, ...ac);
+
+  const servicios = serviciosDe(eqAll, acAll);
+  if (servicios.length) { if (rows.length) rows.push({ t: "vacio" }); rows.push(...servicios); }
+
   const extras = extrasSueltos(quote, "INSTALACIÓN", true);
-  if (extras.length) rows.push({ t: "vacio" }, ...extras);
+  if (extras.length) { if (rows.length) rows.push({ t: "vacio" }); rows.push(...extras); }
   return rows;
 }
 
