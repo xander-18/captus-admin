@@ -74,7 +74,8 @@ const redondear = (n) => Math.round(n * 100) / 100;
 // % (estilo Excel) → precio de venta con IGV
 // const precioDesdeMargen = (costo, m) => redondear((costo / (1 - m / 100)) * IGV_F);
 // Tu fórmula de Excel: =E63*35%+E63  →  costo * (1 + %)
-const precioDesdeMargen = (costo, m) => redondear(costo * (1 + m / 100) * IGV_F);
+// const precioDesdeMargen = (costo, m) => redondear(costo * (1 + m / 100) * IGV_F);
+const precioDesdeMargen = (costo, m) => costo * (1 + m / 100) * IGV_F;
 // precio de venta con IGV → % (estilo Excel) que lo produce
 // const margenDesdePrecio = (costo, precio) =>
 //   costo > 0 && precio > 0 ? (1 - (costo * IGV_F) / precio) * 100 : 0;
@@ -85,6 +86,12 @@ const margenDesdePrecio = (costo, precio) =>
 
 const margenDe = (item) => item.margen ?? margenDesdePrecio(item.costo, item.precio);
 
+// const sinMargenViejo = (q) => ({
+//   ...q,
+//   items: Object.fromEntries(
+//     Object.entries(q.items || {}).map(([k, l]) => [k, l.map(({ margen, ...it }) => it)])
+//   ),
+// });
 // ---------------------------------------------------------------------------
 // RESUMEN FINANCIERO: ÚNICA fuente de verdad de los totales.
 // La usan el editor, la lista, la vista previa y el PDF, así nunca pueden diferir.
@@ -987,6 +994,18 @@ export default function CotizacionesApp() {
                 <div className="summary-line total primary">
                   <span>Venta total</span><span>{fmt(summary.ventaTotal)}</span>
                 </div>
+
+                <div className="separator spaced-sm"></div>
+
+<div className="summary-line total">
+  <span>Margen de ganancia</span>
+  <span className={summary.margenPct < 20 ? "c-danger" : "c-ok"}>
+    {fmt(summary.margen)} · {summary.margenPct.toFixed(1)}%
+  </span>
+</div>
+
+<div className="separator"></div>
+
 
                 <div className="separator"></div>
               </aside>

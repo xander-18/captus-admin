@@ -120,7 +120,7 @@ export const deletePrivilegio = (id)       => apiFetch(`/api/privilegios/${id}`,
 // Asignaciones (devuelven y reciben un array de ids)
 export const getRolPrivilegios = (rolId)      => apiFetch(`/api/roles/${rolId}/privilegios`);
 export const setRolPrivilegios = (rolId, ids) => apiFetch(`/api/roles/${rolId}/privilegios`, { method: 'PUT', body: JSON.stringify({ ids }) });
-// export const getUsuarioRoles   = (userId)      => apiFetch(`/api/usuarios/${userId}/roles`);
+export const getUsuarioRoles   = (userId)      => apiFetch(`/api/usuarios/${userId}/roles`);
 export const setUsuarioRoles   = (userId, ids) => apiFetch(`/api/usuarios/${userId}/roles`, { method: 'PUT', body: JSON.stringify({ ids }) });
 
 // Agrega esto a tu api.js (usa el mismo helper/base URL que ya usan
@@ -129,7 +129,7 @@ export const setUsuarioRoles   = (userId, ids) => apiFetch(`/api/usuarios/${user
 export const getUsuario = (id) => request(`/usuarios/${id}`);
 
 
-export const getUsuarioRoles = (userId) => request(`/usuarios/${userId}/roles`);
+// export const getUsuarioRoles = (userId) => request(`/usuarios/${userId}/roles`);
 
 export const asignarRol = (userId, rolId) =>
   request(`/usuarios/${userId}/roles`, {

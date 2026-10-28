@@ -1576,3 +1576,32 @@ input[placeholder^="Escribe para buscar"]:focus {
 /* Botón "Roles" / "Privilegios" junto a editar y eliminar */
 .table-card td .sg-btn.small { margin-right: 6px; }
 
+/* ── Asignar rol a usuario (select + botón) ── */
+.sg-add-row { display: flex; gap: 8px; margin-bottom: 16px; }
+
+.sg-add-row select {
+  flex: 1;
+  min-width: 0;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 13px;
+  color: #111827;
+  font-family: 'Inter', sans-serif;
+  background: #fff;
+  outline: none;
+  cursor: pointer;
+  transition: border-color .15s;
+}
+.sg-add-row select:focus { border-color: #1a56db; box-shadow: 0 0 0 3px rgba(26,86,219,.08); }
+.sg-add-row select:disabled { background: #f9fafb; color: #9ca3af; cursor: not-allowed; }
+
+/* Fila de un rol ya asignado: nombre a la izquierda, quitar a la derecha */
+.sg-check.between { justify-content: space-between; align-items: center; cursor: default; }
+.sg-check.between:hover { background: none; }
+
+@media (max-width: 767px) {
+  .sg-add-row { flex-direction: column; }
+  .sg-add-row select { min-height: 44px; font-size: 16px; }
+  .sg-add-row .sg-btn { width: 100%; min-height: 44px; }
+}

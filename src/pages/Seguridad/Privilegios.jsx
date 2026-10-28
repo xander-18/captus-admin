@@ -1,4 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import Dialog from '@mui/material/Dialog';
+import { getPrivilegios, postPrivilegio, putPrivilegio, deletePrivilegio, getModulos } from '../../api';
 
 const SINGULAR = 'privilegio';
 
@@ -8,14 +10,18 @@ const TIPOS = [
 ];
 
 const SEARCH_KEYS = ['name', 'code', 'type', 'description'];
-const nextId = rows => rows.reduce((max, r) => Math.max(max, r.id), 0) + 1;
 
 export default function Privilegios() {
-  const [data, setData] = useState([]);          // TODO API: privilegiosApi.list()
-  const [modulos] = useState([]);                // TODO API: modulosApi.list()
+  const [data, setData] = useState([]);
+  const [modulos, setModulos] = useState([]);
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
+
+  const load = () => getPrivilegios().then(setData).catch(err => alert(err.message));
+  const loadModulos = () => getModulos().then(setModulos).catch(err => alert(err.message));
+
+  useEffect(() => { load(); loadModulos(); }, []);
 
   const nombreModulo = useMemo(
     () => Object.fromEntries(modulos.map(m => [m.id, m.name])),
@@ -69,22 +75,27 @@ export default function Privilegios() {
   // el select entrega string: convertir a número o null
   const toPayload = v => ({ ...v, id_modulo: v.id_modulo === '' || v.id_modulo == null ? null : Number(v.id_modulo) });
 
-  // TODO API: privilegiosApi.create / update con toPayload(form)
-  const handleSave = e => {
+  const handleSave = async e => {
     e.preventDefault();
-    const values = toPayload(form);
-    if (editingId) {
-      setData(prev => prev.map(r => (r.id === editingId ? { ...r, ...values } : r)));
-    } else {
-      setData(prev => [...prev, { id: nextId(prev), ...values }]);
+    try {
+      const values = toPayload(form);
+      if (editingId) await putPrivilegio(editingId, values);
+      else await postPrivilegio(values);
+      closeModal();
+      load();
+    } catch (err) {
+      alert(err.message);
     }
-    closeModal();
   };
 
-  // TODO API: privilegiosApi.remove
-  const handleDelete = id => {
+  const handleDelete = async id => {
     if (!window.confirm(`¿Seguro que deseas eliminar este ${SINGULAR}?`)) return;
-    setData(prev => prev.filter(r => r.id !== id));
+    try {
+      await deletePrivilegio(id);
+      load();
+    } catch (err) {
+      alert(err.message);
+    }
   };
 
   return (
@@ -158,54 +169,52 @@ export default function Privilegios() {
         </div>
       </div>
 
-      <div className={`modal-overlay${modalOpen ? ' open' : ''}`} onClick={closeModal}>
-        <div className="modal" onClick={e => e.stopPropagation()}>
-          <div className="modal-title">
-            <i className={editingId ? 'fas fa-edit' : 'fas fa-plus-circle'}></i>
-            {editingId ? 'Editar Privilegio' : 'Nuevo Privilegio'}
+      <Dialog open={modalOpen} onClose={closeModal} slotProps={{ paper: { className: 'modal' } }}>
+        <div className="modal-title">
+          <i className={editingId ? 'fas fa-edit' : 'fas fa-plus-circle'}></i>
+          {editingId ? 'Editar Privilegio' : 'Nuevo Privilegio'}
+        </div>
+
+        <form onSubmit={handleSave}>
+          <div className="modal-fields">
+            {FIELDS.map(f => (
+              <div key={f.name} className="modal-field" style={f.full ? { gridColumn: '1 / -1' } : undefined}>
+                <label>{f.label}{f.required && ' *'}</label>
+                {f.type === 'textarea' ? (
+                  <textarea
+                    name={f.name}
+                    required={f.required}
+                    value={form[f.name]}
+                    onChange={handleChange}
+                    rows={3}
+                    placeholder={f.placeholder}
+                  />
+                ) : f.type === 'select' ? (
+                  <select name={f.name} required={f.required} value={form[f.name]} onChange={handleChange}>
+                    <option value="">{f.required ? 'Selecciona…' : '— Ninguno —'}</option>
+                    {f.options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                ) : (
+                  <input
+                    type={f.type || 'text'}
+                    name={f.name}
+                    required={f.required}
+                    value={form[f.name]}
+                    onChange={handleChange}
+                    placeholder={f.placeholder}
+                  />
+                )}
+                {f.help && <small className="modal-hint">{f.help}</small>}
+              </div>
+            ))}
           </div>
 
-          <form onSubmit={handleSave}>
-            <div className="modal-fields">
-              {FIELDS.map(f => (
-                <div key={f.name} className="modal-field" style={f.full ? { gridColumn: '1 / -1' } : undefined}>
-                  <label>{f.label}{f.required && ' *'}</label>
-                  {f.type === 'textarea' ? (
-                    <textarea
-                      name={f.name}
-                      required={f.required}
-                      value={form[f.name]}
-                      onChange={handleChange}
-                      rows={3}
-                      placeholder={f.placeholder}
-                    />
-                  ) : f.type === 'select' ? (
-                    <select name={f.name} required={f.required} value={form[f.name]} onChange={handleChange}>
-                      <option value="">{f.required ? 'Selecciona…' : '— Ninguno —'}</option>
-                      {f.options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                    </select>
-                  ) : (
-                    <input
-                      type={f.type || 'text'}
-                      name={f.name}
-                      required={f.required}
-                      value={form[f.name]}
-                      onChange={handleChange}
-                      placeholder={f.placeholder}
-                    />
-                  )}
-                  {f.help && <small className="modal-hint">{f.help}</small>}
-                </div>
-              ))}
-            </div>
-
-            <div className="modal-btns">
-              <button type="button" className="btn-cancel" onClick={closeModal}>Cancelar</button>
-              <button type="submit" className="btn-save"><i className="fas fa-save"></i> Guardar</button>
-            </div>
-          </form>
-        </div>
-      </div>
+          <div className="modal-btns">
+            <button type="button" className="btn-cancel" onClick={closeModal}>Cancelar</button>
+            <button type="submit" className="btn-save"><i className="fas fa-save"></i> Guardar</button>
+          </div>
+        </form>
+      </Dialog>
     </div>
   );
 }

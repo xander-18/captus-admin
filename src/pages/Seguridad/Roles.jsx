@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Dialog from '@mui/material/Dialog';
+import { getRoles, postRol, putRol, deleteRol } from '../../api';
 
 const SINGULAR = 'rol';
 
@@ -19,14 +20,17 @@ const FIELDS = [
 
 const SEARCH_KEYS = ['name', 'code', 'description'];
 const EMPTY_FORM = Object.fromEntries(FIELDS.map(f => [f.name, f.type === 'checkbox' ? false : '']));
-const nextId = rows => rows.reduce((max, r) => Math.max(max, r.id), 0) + 1;
 
 export default function Roles() {
-  const [data, setData] = useState([]);          // TODO API: rolesApi.list()
+  const [data, setData] = useState([]);
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
+
+  const load = () => getRoles().then(setData).catch(err => alert(err.message));
+
+  useEffect(() => { load(); }, []);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -46,21 +50,26 @@ export default function Roles() {
     setForm(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
   };
 
-  // TODO API: rolesApi.create / update
-  const handleSave = e => {
+  const handleSave = async e => {
     e.preventDefault();
-    if (editingId) {
-      setData(prev => prev.map(r => (r.id === editingId ? { ...r, ...form } : r)));
-    } else {
-      setData(prev => [...prev, { id: nextId(prev), ...form }]);
+    try {
+      if (editingId) await putRol(editingId, form);
+      else await postRol(form);
+      closeModal();
+      load();
+    } catch (err) {
+      alert(err.message);
     }
-    closeModal();
   };
 
-  // TODO API: rolesApi.remove
-  const handleDelete = id => {
+  const handleDelete = async id => {
     if (!window.confirm(`¿Seguro que deseas eliminar este ${SINGULAR}?`)) return;
-    setData(prev => prev.filter(r => r.id !== id));
+    try {
+      await deleteRol(id);
+      load();
+    } catch (err) {
+      alert(err.message);
+    }
   };
 
   return (

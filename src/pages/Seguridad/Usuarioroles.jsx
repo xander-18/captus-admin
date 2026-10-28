@@ -1,30 +1,31 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { getUsuario, getRoles, getUsuarioRoles, asignarRol, quitarRol } from '../../api';
+import { getUsuarios, getRoles, getUsuarioRoles, setUsuarioRoles } from '../../api';
 
 export default function UsuarioRoles() {
   const { id } = useParams();
   const [usuario, setUsuario] = useState(null);
   const [roles, setRoles] = useState([]);
-  const [asignados, setAsignados] = useState(new Set());
+  const [asignados, setAsignados] = useState([]); // array de ids
+  const [rolElegido, setRolElegido] = useState('');
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(null); // id del rol que se está actualizando
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
   const cargar = async () => {
     setLoading(true);
     setError('');
     try {
-      const [u, todosLosRoles, rolesDelUsuario] = await Promise.all([
-        getUsuario(id),
+      const [usuarios, todosLosRoles, ids] = await Promise.all([
+        getUsuarios(),
         getRoles(),
         getUsuarioRoles(id),
       ]);
-      setUsuario(u);
+      setUsuario(usuarios.find(u => String(u.id) === String(id)) || null);
       setRoles(todosLosRoles);
-      setAsignados(new Set(rolesDelUsuario.map(r => r.id)));
+      setAsignados(ids);
     } catch (e) {
-      setError(e.message || 'No se pudo cargar la información');
+      setError(e.message || 'No se pudo cargar');
     } finally {
       setLoading(false);
     }
@@ -32,27 +33,39 @@ export default function UsuarioRoles() {
 
   useEffect(() => { cargar(); }, [id]);
 
-  const toggle = async (rol) => {
-    const yaAsignado = asignados.has(rol.id);
-    setSaving(rol.id);
+  const rolesAsignados = useMemo(
+    () => asignados.map(rid => roles.find(r => r.id === rid)).filter(Boolean),
+    [asignados, roles]
+  );
+  const rolesDisponibles = useMemo(
+    () => roles.filter(r => !asignados.includes(r.id)),
+    [roles, asignados]
+  );
+
+  const guardarLista = async (nuevaLista) => {
+    setSaving(true);
+    setError('');
     try {
-      if (yaAsignado) await quitarRol(id, rol.id);
-      else await asignarRol(id, rol.id);
-      setAsignados(prev => {
-        const next = new Set(prev);
-        yaAsignado ? next.delete(rol.id) : next.add(rol.id);
-        return next;
-      });
+      await setUsuarioRoles(id, nuevaLista);
+      setAsignados(nuevaLista);
     } catch (e) {
-      alert(e.message || 'No se pudo actualizar el rol');
+      setError(e.message || 'No se pudo guardar');
     } finally {
-      setSaving(null);
+      setSaving(false);
     }
   };
 
-  if (loading) {
-    return <div className="sg-page"><div className="sg-empty">Cargando…</div></div>;
-  }
+  const agregar = () => {
+    if (!rolElegido) return;
+    guardarLista([...asignados, Number(rolElegido)]);
+    setRolElegido('');
+  };
+
+  const quitar = (rolId) => {
+    guardarLista(asignados.filter(rid => rid !== rolId));
+  };
+
+  if (loading) return <div className="sg-page"><div className="sg-empty">Cargando…</div></div>;
 
   return (
     <div className="sg-page">
@@ -64,18 +77,55 @@ export default function UsuarioRoles() {
       {error && <div className="sg-error" role="alert">{error}</div>}
 
       <section className="sg-group">
+        <div className="sg-group-head">
+          <span>Asignar rol</span>
+        </div>
+
         <div className="sg-checks">
-          {roles.length === 0 && <div className="sg-empty">No hay roles creados.</div>}
-          {roles.map(r => (
-            <label key={r.id} className="sg-check">
-              <input
-                type="checkbox"
-                checked={asignados.has(r.id)}
-                disabled={saving === r.id}
-                onChange={() => toggle(r)}
-              />
+          <div className="sg-add-row" style={{ gridColumn: '1 / -1' }}>
+            <select
+              value={rolElegido}
+              onChange={e => setRolElegido(e.target.value)}
+              disabled={saving || rolesDisponibles.length === 0}
+            >
+              <option value="">
+                {rolesDisponibles.length === 0 ? 'No hay más roles por asignar' : 'Selecciona un rol para asignar…'}
+              </option>
+              {rolesDisponibles.map(r => (
+                <option key={r.id} value={r.id}>{r.name}</option>
+              ))}
+            </select>
+            <button className="sg-btn primary" onClick={agregar} disabled={!rolElegido || saving}>
+              Asignar
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section className="sg-group">
+        <div className="sg-group-head">
+          <span>Roles asignados</span>
+        </div>
+
+        <div className="sg-checks">
+          {rolesAsignados.length === 0 && (
+            <div className="sg-empty" style={{ gridColumn: '1 / -1' }}>
+              Este usuario no tiene roles asignados.
+            </div>
+          )}
+          {rolesAsignados.map(r => (
+            <div key={r.id} className="sg-check between">
               <span>{r.name}<small>{r.description}</small></span>
-            </label>
+              <button
+                type="button"
+                className="btn-del"
+                onClick={() => quitar(r.id)}
+                disabled={saving}
+                title="Quitar"
+              >
+                <i className="fas fa-trash"></i>
+              </button>
+            </div>
           ))}
         </div>
       </section>
