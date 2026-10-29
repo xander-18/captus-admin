@@ -608,16 +608,6 @@ function nombreItem(item, cat, catalog) {
 // FILAS. Todo sale de lo que ya existe en la cotización:
 // Equipos principales, Accesorios, Mano de obra, Transporte y Certificado.
 // ---------------------------------------------------------------------------
-// Cada línea trae `incluye` si el producto del catálogo declara su contenido interno.
-// const lineasDe = (quote, cat, catalog) =>
-//   (quote.items[cat] || []).map((it) => {
-//     const prod = (catalog[cat] || []).find((x) => x.id === it.pid);
-//     return {
-//       t: "item", qty: it.qty, nombre: nombreItem(it, cat, catalog), pu: it.precio,
-//       deKit: !!it.deKit, incluye: prod?.incluye,
-//     };
-//   });
-
 const ES_SERVICIO = /^\s*(servicio|mano de obra|mantenimiento|instalaci[oó]n|certificado|transporte)/i;
 
 const lineasDe = (quote, cat, catalog) =>
@@ -647,7 +637,15 @@ const detalleKit = (kit) =>
     .flatMap((r) => (r.incluye ? r.incluye.map(([q, n]) => ({ qty: q * r.qty, nombre: n })) : [r]))
     .map(cant);
 const aprobado = (e) => e?.required && e?.approval === "approved" && e.value > 0;
-const manoDeObra = (q) => (q.laborApproval === "approved" ? q.laborValue || 0 : 0);
+
+// Monto total de "Servicio de instalación": según el modo, el valor aprobado o la suma de los ítems.
+const manoDeObra = (q) => {
+  if (q.laborModo === "items") {
+    return (q.laborItems || []).filter((l) => l.monto > 0).reduce((a, l) => a + l.monto, 0);
+  }
+  return q.laborApproval === "approved" ? q.laborValue || 0 : 0;
+};
+
 const nombreKit = (q) => (q.proyecto || q.kitOrigen || "Kit").trim();
 // Servicios adicionales y descuentos que escribió el usuario (solo líneas con monto > 0), más el ajuste
 // heredado de cotizaciones antiguas. Estas filas deben sumar exactamente lo que entra en summary.subtotal.
@@ -681,44 +679,46 @@ const ajuste = (q, negrita) => {
   return rows;
 };
 
+// ---------------------------------------------------------------------------
+// "Servicio de instalación":
+//  - Modo TOTAL (por defecto): una sola fila con el monto aprobado, y debajo el detalle
+//    fijo de cada plantilla (texto plano, sin precio), como siempre.
+//  - Modo ITEMS: un encabezado con el TÍTULO que escribió el usuario (o el de la plantilla
+//    si no escribió nada) y debajo cada ítem como fila propia, con su propio precio.
+// ---------------------------------------------------------------------------
+function filasInstalacion(quote, etiquetaDefault, detallesFijos = [], { negrita = true, incluirTransporte = false } = {}) {
+  const total = manoDeObra(quote);
+  if (total <= 0) return [];
+
+  if (quote.laborModo === "items") {
+    const titulo = ((quote.laborTitulo || "").trim() || etiquetaDefault).toUpperCase();
+    const items = (quote.laborItems || []).filter((l) => l.monto > 0);
+    return [
+      { t: "seccion", texto: titulo, valor: total },
+      ...items.map((l) => ({
+        t: "item",
+        qty: 1,
+        nombre: (l.descripcion || "").trim() || "Ítem de instalación",
+        pu: l.monto,
+      })),
+    ];
+  }
+
+  const rows = [{ t: "item", qty: 1, nombre: etiquetaDefault, pu: total, bold: negrita }];
+  detallesFijos.forEach((s) => rows.push({ t: "detalle", texto: s }));
+  if (incluirTransporte && !aprobado(quote.transporte)) rows.push({ t: "detalle", texto: "Incluye transporte" });
+  return rows;
+}
+
 function extrasSueltos(quote, etiquetaMO, negrita) {
   const out = [];
   if (aprobado(quote.transporte)) out.push({ t: "item", qty: 1, nombre: "TRANSPORTE", pu: quote.transporte.value, bold: negrita });
-  if (manoDeObra(quote) > 0) out.push({ t: "item", qty: 1, nombre: etiquetaMO, pu: manoDeObra(quote), bold: negrita });
+  out.push(...filasInstalacion(quote, etiquetaMO, [], { negrita }));
   if (aprobado(quote.certificado)) out.push({ t: "item", qty: 1, nombre: "CERTIFICADO", pu: quote.certificado.value, bold: negrita });
   return [...out, ...ajuste(quote, negrita)];
 }
 
-// EQUIPO simple: equipos y accesorios en una sola lista. El IGV, si aplica, se desglosa debajo (como Shoctix).
-// function filasSimple(quote, catalog) {
-//   const rows = [...lineasDe(quote, "equipos", catalog), ...lineasDe(quote, "accesorios", catalog)];
-//   const extras = extrasSueltos(quote, "MANO DE OBRA", false);
-//   if (extras.length) rows.push({ t: "vacio" }, ...extras);
-//   return rows;
-// }
-// function filasSimple(quote, catalog) {
-//   const rows = [...lineasDe(quote, "equipos", catalog), ...lineasDe(quote, "accesorios", catalog)];
-//   const extras = extrasSueltos(quote, "SERVICIO DE INSTALACION", true); // antes: false
-//   if (extras.length) rows.push({ t: "vacio" }, ...extras);
-//   return rows;
-// }
-// function filasSimple(quote, catalog) {
-//   const eq = lineasDe(quote, "equipos", catalog);
-//   const ac = lineasDe(quote, "accesorios", catalog);
-//   const rows = [];
-
-//   const bloque = (titulo, lista) => {
-//     if (!lista.length) return;
-//     if (rows.length) rows.push({ t: "vacio" });
-//     rows.push({ t: "seccion", texto: titulo, valor: sumaFilas(lista) }, ...lista);
-//   };
-//   bloque("EQUIPOS PRINCIPALES", eq);
-//   bloque("ACCESORIOS DE INSTALACIÓN", ac);
-
-//   const extras = extrasSueltos(quote, "SERVICIO DE INSTALACION", true);
-//   if (extras.length) rows.push({ t: "vacio" }, ...extras);
-//   return rows;
-// }
+// EQUIPO simple: equipos y accesorios en una sola lista. El IGV, si aplica, se desglosa debajo.
 function filasSimple(quote, catalog) {
   const eq = lineasDe(quote, "equipos", catalog);
   const ac = lineasDe(quote, "accesorios", catalog);
@@ -731,7 +731,6 @@ function filasSimple(quote, catalog) {
     rows.push({ t: "seccion", texto: titulo, valor: sumaFilas(prods) }, ...prods);
   };
   bloque("EQUIPOS PRINCIPALES", eq);
-  // bloque("ACCESORIOS DE INSTALACIÓN", ac);
   bloque("MATERIALES DE INSTALACIÓN", ac);
 
   const servicios = serviciosDe(eq, ac);
@@ -747,6 +746,7 @@ function filasSimple(quote, catalog) {
   }
   return rows;
 }
+
 // KIT / ALARMA: lo que cargó el kit = KIT (precio fijo + incluye); lo agregado después y los accesorios = adicionales.
 function filasAlarma(quote, catalog) {
   const eqAll = lineasDe(quote, "equipos", catalog);
@@ -803,9 +803,7 @@ function filasProyecto(quote, catalog, p) {
   bloque("SEÑALÉTICA FOTOLUMINISCENTE", ac.filter(esSenal));
 
   if (manoDeObra(quote) > 0) {
-    rows.push({ t: "vacio" }, { t: "item", qty: 1, nombre: "SERVICIO DE INSTALACIÓN", pu: manoDeObra(quote), bold: true });
-    INSTALACION_DET[p].forEach((s) => rows.push({ t: "detalle", texto: s }));
-    if (!aprobado(quote.transporte)) rows.push({ t: "detalle", texto: "Incluye transporte" });
+    rows.push({ t: "vacio" }, ...filasInstalacion(quote, "SERVICIO DE INSTALACIÓN", INSTALACION_DET[p], { incluirTransporte: true }));
   }
   if (aprobado(quote.certificado)) {
     rows.push(
@@ -846,7 +844,6 @@ function condiciones(quote, p) {
     "Validez de la cotización: 05 días calendario.",
   ];
 
-  // Checkbox "Agregar IGV (18%)": el total ya incluye el IGV sumado
   const igv = quote.aplicarIgv ? ["El monto total incluye IGV (18%)."] : [];
   const g = garantiaLinea(quote, p);
   return [...base, ...igv, ...(g ? [g] : [])];
@@ -857,12 +854,10 @@ function condiciones(quote, p) {
 // ---------------------------------------------------------------------------
 const numeroDe = (q) => q.numero || q.id.slice(-4);
 
-// Cabecera de la primera hoja: logo + datos de la empresa + caja con el número.
 function dibujarEncabezado(doc, logo, quote) {
   const lw = 50, lh = lw / logo.ratio, yTop = 9;
   doc.addImage(logo.data, "PNG", L, yTop, lw, lh);
 
-  // Datos de la empresa, a la derecha del logo
   const xe = L + lw + 5, xCaja = 142, we = xCaja - xe - 4, alto = 3.7;
   doc.setLineHeightFactor(1.2);
   let ye = 13;
@@ -875,7 +870,6 @@ function dibujarEncabezado(doc, logo, quote) {
     ye += ls.length * alto;
   });
 
-  // Caja "COTIZACIÓN Nº"
   const num = String(numeroDe(quote));
   doc.setFillColor(...C.caja);
   doc.setDrawColor(...C.gris); doc.setLineWidth(0.3);
@@ -883,7 +877,7 @@ function dibujarEncabezado(doc, logo, quote) {
   doc.setTextColor(0);
   doc.setFont("helvetica", "bold"); doc.setFontSize(10);
   doc.text("COTIZACIÓN Nº", (xCaja + R) / 2, 18, { align: "center" });
-  doc.setFontSize(num.length > 8 ? 14 : 18); // "0476-2026" (9 caracteres) entra a 14 pt
+  doc.setFontSize(num.length > 8 ? 14 : 18);
   doc.text(num, (xCaja + R) / 2, 29, { align: "center" });
 
   const yFin = Math.max(yTop + lh, ye, 36) + 3;
@@ -893,7 +887,6 @@ function dibujarEncabezado(doc, logo, quote) {
   return yFin + 7;
 }
 
-// Cabecera reducida para las hojas siguientes.
 function dibujarMini(doc, logo, quote) {
   const w = 30;
   doc.addImage(logo.data, "PNG", L, 8, w, w / logo.ratio);
@@ -904,8 +897,6 @@ function dibujarMini(doc, logo, quote) {
   doc.setLineWidth(0.2);
 }
 
-// Cliente (izquierda) y detalles (derecha). Los textos largos se parten en varias líneas:
-// una dirección larga ya no se sale de la hoja.
 function dibujarDatos(doc, quote, y0) {
   const fs = 9, lh = fs * 1.2 * 0.3528;
   doc.setLineHeightFactor(1.2);
@@ -947,7 +938,6 @@ function dibujarDatos(doc, quote, y0) {
 
 const TAM = (c) => (c ? { fs: 8, fsInc: 7.5, lh: 3.8, vacio: 2, pad: 0.5 } : { fs: 9, fsInc: 8.5, lh: 4.6, vacio: 3, pad: 0.8 });
 
-// `desglose` = { sub, igv } o null. Si viene, se dibujan "Subtotal sin IGV" e "IGV (18%)" encima del TOTAL.
 function dibujarTabla(doc, rows, total, desglose, y0, logo, quote, t) {
   let y = y0, n = 0;
   doc.setLineHeightFactor(t.lh / (t.fs * 0.3528));
@@ -1006,13 +996,11 @@ function dibujarTabla(doc, rows, total, desglose, y0, logo, quote, t) {
     if (r.valor != null) doc.text(n2(r.valor), R - 2, by, { align: "right" });
     y += h;
 
-    // Línea fina entre filas; el detalle de un ítem queda pegado a su ítem.
     const sig = rows[i + 1];
     const pegado = sig && (sig.t === "incluye" || sig.t === "detalle");
     if (!pegado && r.t !== "seccion") linea();
   });
 
-  // Cierre de la tabla + totales (siempre)
   linea();
   y += 4;
   if (y + (desglose ? 11 : 0) + 9 > FOOTER_SAFE_Y) { pagina(); y += 2; }
@@ -1037,8 +1025,6 @@ function dibujarTabla(doc, rows, total, desglose, y0, logo, quote, t) {
   return y + 9;
 }
 
-// NOTA libre del usuario (ej. "materiales según demanda"). Va después de la tabla
-// y antes de Términos y condiciones; si está vacía, no ocupa espacio.
 function dibujarNota(doc, y, logo, quote, c) {
   const texto = (quote.nota || "").trim();
   if (!texto) return y;
@@ -1059,7 +1045,6 @@ function dibujarNota(doc, y, logo, quote, c) {
   return y;
 }
 
-// Términos y condiciones + cuenta bancaria (caja, como en la referencia de Best Security).
 function dibujarCierre(doc, y, logo, quote, p, c) {
   const k = c ? { fs: 8, fc: 7.5, l: 3.5, g: 4, t: 4 } : { fs: 9, fc: 8.5, l: 4.2, g: 6, t: 5 };
   doc.setFont("helvetica", "normal"); doc.setFontSize(k.fc);
@@ -1088,7 +1073,6 @@ function dibujarCierre(doc, y, logo, quote, p, c) {
   bancoLineas.forEach((s) => { doc.text(s, L + 3, yy); yy += k.l; });
 }
 
-// Pie en todas las hojas: contacto y numeración.
 function dibujarPies(doc) {
   const total = doc.getNumberOfPages();
   for (let i = 1; i <= total; i++) {
@@ -1114,16 +1098,12 @@ function construir(quote, summary, catalog, logo, compacto) {
     : p === "alarma" ? filasAlarma(quote, catalog)
     : filasProyecto(quote, catalog, p);
 
-  // Desglose Subtotal / IGV encima del TOTAL:
-  // - aplicarIgv (checkbox "Agregar IGV (18%)"): el IGV se SUMÓ al subtotal; ambos salen de summary.
-  // - mostrarIgv (antiguo, solo equipo simple): el IGV ya venía incluido en el total y solo se separa.
   const desglose = quote.aplicarIgv
     ? { sub: summary.subtotal, igv: summary.igv }
     : p === "simple" && quote.mostrarIgv
       ? { sub: summary.ventaTotal / IGV, igv: summary.ventaTotal - summary.ventaTotal / IGV }
       : null;
 
-  // El total sale de summary: una sola fuente de verdad.
   const yFin = dibujarTabla(doc, rows, summary.ventaTotal, desglose, y, logo, quote, TAM(compacto));
   const yNota = dibujarNota(doc, yFin, logo, quote, compacto);
   dibujarCierre(doc, yNota, logo, quote, p, compacto);
@@ -1131,10 +1111,6 @@ function construir(quote, summary, catalog, logo, compacto) {
   return doc;
 }
 
-// ---------------------------------------------------------------------------
-// NOMBRE DEL ARCHIVO: "<correlativo> - <nombre que escribe el usuario>.pdf"
-// Ej.: "0476-2026 - Alarma comunitaria Surco.pdf". Sin nombre: "0476-2026.pdf".
-// ---------------------------------------------------------------------------
 export function nombreArchivoPDF(quote) {
   const limpio = (s) => String(s || "").replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim();
   const num = limpio(numeroDe(quote));
@@ -1142,9 +1118,6 @@ export function nombreArchivoPDF(quote) {
   return (nombre ? `${num} - ${nombre}` : num) + ".pdf";
 }
 
-// ---------------------------------------------------------------------------
-// API PÚBLICA
-// ---------------------------------------------------------------------------
 async function generarPDF(quote, summary, catalog) {
   const logo = await cargarLogo(logoUrl);
   let doc = construir(quote, summary, catalog, logo, false);
@@ -1160,10 +1133,6 @@ export async function exportarPDF(quote, summary, catalog) {
   doc.save(nombreArchivoPDF(quote));
 }
 
-// Igual que exportarPDF, pero si hay una carpeta compartida configurada (ver carpetaExport.js)
-// y el permiso sigue vigente, el PDF se escribe directo ahí — sin el diálogo "Guardar como".
-// Si la carpeta no está disponible (ej. la unidad de red se desconectó), cae de vuelta a la
-// descarga normal del navegador y lo avisa en el resultado.
 export async function exportarPDFConCarpeta(quote, summary, catalog) {
   const doc = await generarPDF(quote, summary, catalog);
   const nombre = nombreArchivoPDF(quote);
@@ -1181,7 +1150,6 @@ export async function exportarPDFConCarpeta(quote, summary, catalog) {
   return { guardadoEnCarpeta: false, nombre };
 }
 
-// Devuelve una URL temporal del PDF (quien la use debe liberarla con URL.revokeObjectURL).
 export async function previsualizarPDF(quote, summary, catalog) {
   const doc = await generarPDF(quote, summary, catalog);
   return URL.createObjectURL(doc.output("blob"));

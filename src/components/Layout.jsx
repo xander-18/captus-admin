@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { Calendar, LogOut, ShieldCheck, Menu, X, ChevronDown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import NAV_ITEMS from '../menu';
-
+// import NAV_ITEMS from '../menu';
+import getNavItems from '../menu';
 // Desde 1024px el menú queda acoplado a la izquierda; por debajo es un cajón.
 const DESKTOP = '(min-width: 1024px)';
 const isDesktop = () => window.matchMedia(DESKTOP).matches;
@@ -35,6 +35,7 @@ const hasActiveChild = (item, pathname) =>
 
 export default function Layout({ children }) {
   const { logout, user } = useAuth();
+    const NAV_ITEMS = getNavItems();   // ← esta línea falta
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const today = new Date().toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' });

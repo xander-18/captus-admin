@@ -45,7 +45,7 @@ export default function Privilegios() {
       name: 'id_modulo', label: 'Módulo', type: 'select', help: 'Opcional',
       options: modulos.map(m => ({ value: m.id, label: m.name })),
     },
-    { name: 'description', label: 'Descripción', required: true, type: 'textarea', full: true },
+    { name: 'description', label: 'Descripción', required: false, type: 'textarea', full: true },
   ], [modulos]);
 
   const emptyForm = useMemo(

@@ -116,12 +116,12 @@ function calcularResumen(q) {
   const ac = suma(q.items?.accesorios);
   const aprobada = (e) => (e?.required && e?.approval === "approved" ? e.value || 0 : 0);
 
-  const labor = q.laborApproval === "approved" ? q.laborValue || 0 : 0;
+  // const labor = q.laborApproval === "approved" ? q.laborValue || 0 : 0;
   const transporte = aprobada(q.transporte);
   const certificado = aprobada(q.certificado);
   const servicios = sumaLineas(q.serviciosAdicionales);
   const descuentos = sumaLineas(q.descuentos);
-
+  const labor = q.laborModo === "items" ? sumaLineas(q.laborItems) : (q.laborApproval === "approved" ? q.laborValue || 0 : 0);
   const costoTotal = redondear(eq.costo + ac.costo + labor + transporte + certificado);
   const subtotal = redondear(
     eq.venta + ac.venta + labor + transporte + certificado + servicios - descuentos + (q.ajusteGlobal || 0)
@@ -169,6 +169,8 @@ function blankQuote() {
     laborApproval: null,
     transporte: blankExtra(),
     certificado: blankExtra(),
+    laborModo: "total",     // "total" | "items"
+    laborItems: [], 
     serviciosAdicionales: [],
     descuentos: [],
     nota: "",              // texto libre; sale en el PDF antes de Términos y condiciones
@@ -793,75 +795,112 @@ export default function CotizacionesApp() {
                 />
 
                 {/* Mano de obra + extras */}
-                <div className="card">
-                  <div className="card-header labor-header">
-                    <span className="card-title">{esKit ? "Instalación" : "Servicios de Instalacion"}</span>
-                    <span className="card-amount">
-                      {quote.laborApproval === "approved" ? fmt(quote.laborValue) : "S/ 0.00"}
-                    </span>
-                  </div>
-                  <div className="labor-row">
-                    <div className="labor-input-wrap">
-                      <span>S/</span>
-                      <input
-                        type="number"
-                        className="labor-input"
-                        value={quote.laborApproval === "approved" ? quote.laborValue : quote.laborValue || ""}
-                        readOnly={quote.laborApproval === "approved" && role === "vendedor"}
-                        onChange={(e) => updateField("laborValue", parseFloat(e.target.value) || 0)}
-                      />
-                    </div>
-                    {quote.laborApproval === "approved" ? (
-                      <span className="approved-tag"><Check size={12} /> Aprobado</span>
-                    ) : (
-                      <button className="btn btn-primary" onClick={confirmLabor}>Confirmar</button>
-                    )}
-                  </div>
+              <div className="card">
+  <div className="card-header labor-header">
+    <span className="card-title">{esKit ? "Instalación" : "Servicios de Instalacion"}</span>
+    <span className="card-amount">{fmt(summary.labor)}</span>
+  </div>
 
-                  <div className="separator spaced"></div>
-                  <ExtraCostRow
-                    label="Transporte"
-                    field="transporte"
-                    data={quote.transporte}
-                    onToggle={toggleExtraRequired}
-                    onChangeValue={updateExtraValue}
-                    onConfirm={confirmExtra}
-                    role={role}
-                  />
-                  <div className="separator spaced"></div>
-                  <ExtraCostRow
-                    label="CERTIFICADO"
-                    field="certificado"
-                    data={quote.certificado}
-                    onToggle={toggleExtraRequired}
-                    onChangeValue={updateExtraValue}
-                    onConfirm={confirmExtra}
-                    role={role}
-                  />
-                  <div className="separator spaced"></div>
-                  <LineasLibres
-                    label="SERVICIOS ADICIONALES"
-                    textoAgregar="Agregar servicio adicional"
-                    placeholder="Describe el servicio (Ej. Configuración de CCTV remoto)"
-                    field="serviciosAdicionales"
-                    lineas={quote.serviciosAdicionales || []}
-                    onAdd={addLinea}
-                    onUpdate={updateLinea}
-                    onRemove={removeLinea}
-                  />
-                  <div className="separator spaced"></div>
-                  <LineasLibres
-                    label="DESCUENTOS"
-                    textoAgregar="Agregar descuento"
-                    placeholder="Describe el descuento (Ej. Descuento por pronto pago)"
-                    field="descuentos"
-                    lineas={quote.descuentos || []}
-                    onAdd={addLinea}
-                    onUpdate={updateLinea}
-                    onRemove={removeLinea}
-                    restar
-                  />
-                </div>
+  <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+    <button
+      className={`btn btn-toggle-cols ${(quote.laborModo || "total") === "total" ? "is-active" : ""}`}
+      onClick={() => updateField("laborModo", "total")}
+    >
+      Monto total
+    </button>
+    <button
+      className={`btn btn-toggle-cols ${quote.laborModo === "items" ? "is-active" : ""}`}
+      onClick={() => updateField("laborModo", "items")}
+    >
+      Desglosar por ítems
+    </button>
+  </div>
+
+  {(quote.laborModo || "total") === "total" ? (
+    <div className="labor-row">
+      <div className="labor-input-wrap">
+        <span>S/</span>
+        <input
+          type="number"
+          className="labor-input"
+          value={quote.laborApproval === "approved" ? quote.laborValue : quote.laborValue || ""}
+          readOnly={quote.laborApproval === "approved" && role === "vendedor"}
+          onChange={(e) => updateField("laborValue", parseFloat(e.target.value) || 0)}
+        />
+      </div>
+      {quote.laborApproval === "approved" ? (
+        <span className="approved-tag"><Check size={12} /> Aprobado</span>
+      ) : (
+        <button className="btn btn-primary" onClick={confirmLabor}>Confirmar</button>
+      )}
+    </div>
+  ) : (
+    <>
+      <div className="field" style={{ marginBottom: 10 }}>
+        <label>Título en el PDF (opcional — si lo dejas vacío sale el de siempre)</label>
+        <CampoTexto
+          placeholder={esKit ? "Ej. INSTALACIÓN" : "Ej. SERVICIO DE INSTALACIÓN Y MANTENIMIENTO"}
+          value={quote.laborTitulo}
+          onChange={(v) => updateField("laborTitulo", v)}
+        />
+      </div>
+      <LineasLibres
+        label="ÍTEMS DE INSTALACIÓN"
+        textoAgregar="Agregar ítem de instalación"
+        placeholder="Describe el ítem (Ej. Instalación de cámaras, Mantenimiento pozo a tierra)"
+        field="laborItems"
+        lineas={quote.laborItems || []}
+        onAdd={addLinea}
+        onUpdate={updateLinea}
+        onRemove={removeLinea}
+      />
+    </>
+  )}
+
+  <div className="separator spaced"></div>
+  <ExtraCostRow
+    label="Transporte"
+    field="transporte"
+    data={quote.transporte}
+    onToggle={toggleExtraRequired}
+    onChangeValue={updateExtraValue}
+    onConfirm={confirmExtra}
+    role={role}
+  />
+  <div className="separator spaced"></div>
+  <ExtraCostRow
+    label="CERTIFICADO"
+    field="certificado"
+    data={quote.certificado}
+    onToggle={toggleExtraRequired}
+    onChangeValue={updateExtraValue}
+    onConfirm={confirmExtra}
+    role={role}
+  />
+  <div className="separator spaced"></div>
+  <LineasLibres
+    label="SERVICIOS ADICIONALES"
+    textoAgregar="Agregar servicio adicional"
+    placeholder="Describe el servicio (Ej. Configuración de CCTV remoto)"
+    field="serviciosAdicionales"
+    lineas={quote.serviciosAdicionales || []}
+    onAdd={addLinea}
+    onUpdate={updateLinea}
+    onRemove={removeLinea}
+  />
+  <div className="separator spaced"></div>
+  <LineasLibres
+    label="DESCUENTOS"
+    textoAgregar="Agregar descuento"
+    placeholder="Describe el descuento (Ej. Descuento por pronto pago)"
+    field="descuentos"
+    lineas={quote.descuentos || []}
+    onAdd={addLinea}
+    onUpdate={updateLinea}
+    onRemove={removeLinea}
+    restar
+  />
+</div>
 
                 {/* Nota y garantía: la nota sale en el PDF justo antes de Términos y condiciones */}
                 <div className="card">
