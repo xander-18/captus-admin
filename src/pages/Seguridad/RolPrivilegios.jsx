@@ -2,38 +2,38 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { getRoles, getPrivilegios, getModulos, getRolPrivilegios, setRolPrivilegios } from '../../api';
 
-
 export default function RolPrivilegios() {
   const { id } = useParams();
 
-  // TODO API: estos tres vendrán de rolesApi / privilegiosApi / modulosApi / getRolPrivilegios(id)
-  
-  const [rol] = useState(null);
-  const [privilegios] = useState([]);
-  const [modulos] = useState([]);
+  const [rol, setRol] = useState(null);
+  const [privilegios, setPrivilegios] = useState([]);
+  const [modulos, setModulos] = useState([]);
 
   const [sel, setSel] = useState(new Set());
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [ok, setOk] = useState('');
 
   useEffect(() => {
-  (async () => {
-    try {
-      const [roles, privs, mods, asignados] = await Promise.all([
-        getRoles(), getPrivilegios(), getModulos(), getRolPrivilegios(id),
-      ]);
-      setRol(roles.find(r => String(r.id) === String(id)) || null);
-      setPrivilegios(privs);
-      setModulos(mods);
-      setSel(new Set(asignados));
-    } catch (e) {
-      setError(e.message || 'No se pudo cargar');
-    }
-  })();
-}, [id]);
+    (async () => {
+      setLoading(true);
+      try {
+        const [roles, privs, mods, asignados] = await Promise.all([
+          getRoles(), getPrivilegios(), getModulos(), getRolPrivilegios(id),
+        ]);
+        setRol(roles.find(r => String(r.id) === String(id)) || null);
+        setPrivilegios(privs);
+        setModulos(mods);
+        setSel(new Set(asignados));
+      } catch (e) {
+        setError(e.message || 'No se pudo cargar');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [id]);
 
-  // Agrupar privilegios por módulo (null => "Sin módulo")
   const grupos = useMemo(() => {
     const map = new Map();
     privilegios.forEach(p => {
@@ -65,18 +65,18 @@ export default function RolPrivilegios() {
     });
   };
 
-  // TODO API: await setRolPrivilegios(id, [...sel]) dentro de un try/catch
- async function guardar() {
-  setSaving(true); setError(''); setOk('');
-  try {
-    await setRolPrivilegios(id, [...sel]);
-    setOk('Privilegios guardados');
-  } catch (e) {
-    setError(e.message || 'No se pudo guardar');
-  } finally {
-    setSaving(false);
+  async function guardar() {
+    setSaving(true); setError(''); setOk('');
+    try {
+      await setRolPrivilegios(id, [...sel]);
+      setOk('Privilegios guardados');
+    } catch (e) {
+      setError(e.message || 'No se pudo guardar');
+    } finally {
+      setSaving(false);
+    }
   }
-}
+
   return (
     <div className="sg-page">
       <div className="sg-head">
@@ -87,7 +87,7 @@ export default function RolPrivilegios() {
       {error && <div className="sg-error" role="alert">{error}</div>}
       {ok && <div className="sg-ok" role="status">{ok}</div>}
 
-      {grupos.length === 0 && (
+      {!loading && grupos.length === 0 && (
         <div className="sg-empty">Aún no hay privilegios. Créalos primero en la pantalla de Privilegios.</div>
       )}
 

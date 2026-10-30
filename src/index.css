@@ -1605,3 +1605,23 @@ input[placeholder^="Escribe para buscar"]:focus {
   .sg-add-row select { min-height: 44px; font-size: 16px; }
   .sg-add-row .sg-btn { width: 100%; min-height: 44px; }
 }
+
+.table-actions input[type="text"] {
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 13px;
+  color: #111827;
+  font-family: 'Inter', sans-serif;
+  outline: none;
+  width: 230px;
+  background: #fff;
+  transition: border-color .15s, box-shadow .15s;
+}
+.table-actions input[type="text"]:focus {
+  border-color: #1a56db;
+  box-shadow: 0 0 0 3px rgba(26,86,219,.08);
+}
+.table-actions input[type="text"]::placeholder {
+  color: #9ca3af;
+}

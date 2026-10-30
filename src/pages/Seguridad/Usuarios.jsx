@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Dialog from '@mui/material/Dialog';
 import { getUsuarios, postUsuario, putUsuario, deleteUsuario } from '../../api';
-
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 const SINGULAR = 'usuario';
 
 const COLUMNS = [
@@ -15,16 +16,16 @@ const COLUMNS = [
 ];
 
 const FIELDS = [
-  { name: 'name',     label: 'Nombre', required: true, full: true },
+  { name: 'name',     label: 'Nombre', required: false, full: true, editOnly: true },
   { name: 'email',    label: 'Email', type: 'email', required: true, full: true },
-  { name: 'dni',      label: 'DNI' },
-  { name: 'phone',    label: 'Teléfono' },
-  { name: 'password', label: 'Contraseña', type: 'password', requiredOnCreate: true, full: true, help: 'Al editar, déjala vacía para no cambiarla.' },
-  { name: 'active',   label: 'Usuario activo', type: 'checkbox', full: true },
+  { name: 'dni',      label: 'DNI', editOnly: true },
+  { name: 'phone',    label: 'Teléfono', editOnly: true },
+  { name: 'password', label: 'Contraseña', type: 'password', requiredOnCreate: true, full: true,
+    help: 'Al editar, déjala vacía para no cambiarla.' },
 ];
 
 const SEARCH_KEYS = ['name', 'email', 'dni', 'phone'];
-const EMPTY_FORM = { name: '', email: '', dni: '', phone: '', password: '', active: true };
+const EMPTY_FORM = { name: '', email: '', dni: '', phone: '', password: '',};
 
 export default function Usuarios() {
   const [data, setData] = useState([]);
@@ -139,12 +140,19 @@ export default function Usuarios() {
                       {/* <Link className="sg-btn small" to={`/seguridad/usuarios/${row.id}/roles`}>Roles</Link> */}
                       <Link className="sg-btn small" to={`/usuario/${row.id}`}>Roles</Link>
                       
-                      <button type="button" className="btn-edit" onClick={() => openModal(row)} title="Editar">
+                      {/* <button type="button" className="btn-edit" onClick={() => openModal(row)} title="Editar">
                         <i className="fas fa-pen"></i>
                       </button>
                       <button type="button" className="btn-del" onClick={() => handleDelete(row.id)} title="Eliminar">
                         <i className="fas fa-trash"></i>
-                      </button>
+                      </button> */}
+                      {/* Editar / Eliminar en la fila */}
+<button type="button" className="btn-edit" onClick={() => openModal(row)} title="Editar">
+  <EditIcon sx={{ fontSize: 20 }} />
+</button>
+<button type="button" className="btn-del" onClick={() => handleDelete(row.id)} title="Eliminar">
+  <DeleteIcon sx={{ fontSize: 20 }} />
+</button>
                     </td>
                   </tr>
                 ))
