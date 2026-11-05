@@ -1625,3 +1625,189 @@ input[placeholder^="Escribe para buscar"]:focus {
 .table-actions input[type="text"]::placeholder {
   color: #9ca3af;
 }
+
+/* =====================================================================
+   HERRAMIENTAS (pages/Herramientas.jsx)
+   Prefijo hr-. No depende de .app-root ni de sus variables.
+   ===================================================================== */
+
+/* ---------- Cabecera ---------- */
+.hr-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+.hr-head h1 { flex: 1 1 auto; min-width: 0; font-size: 18px; font-weight: 600; color: #111827; }
+.hr-toggle { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #6b7280; cursor: pointer; user-select: none; }
+.hr-toggle input { width: 16px; height: 16px; accent-color: #1a56db; }
+
+/* ---------- Botones ---------- */
+.hr-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 8px;
+  padding: 8px 14px; font-size: 13px; font-weight: 500; color: #374151;
+  font-family: 'Inter', sans-serif; cursor: pointer; white-space: nowrap;
+  transition: border-color .15s, color .15s, background .15s;
+}
+.hr-btn:hover { border-color: #1a56db; color: #1a56db; }
+.hr-btn.primary { background: #1a56db; border-color: #1a56db; color: #fff; font-weight: 600; }
+.hr-btn.primary:hover { background: #1648c8; border-color: #1648c8; color: #fff; }
+.hr-btn:disabled { background: #9ca3af; border-color: #9ca3af; color: #fff; cursor: not-allowed; }
+.hr-icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: none; border: none; color: #9ca3af; padding: 6px; border-radius: 6px; cursor: pointer;
+  transition: color .15s, background .15s;
+}
+.hr-icon-btn:hover { color: #374151; background: #f3f4f6; }
+.hr-icon-btn.danger:hover { color: #ef4444; background: #fef2f2; }
+
+/* ---------- Lista ---------- */
+.hr-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; overflow: hidden; }
+.hr-table { width: 100%; border-collapse: collapse; }
+.hr-table thead th {
+  padding: 9px 16px; text-align: left; font-size: 11px; font-weight: 600; letter-spacing: .5px;
+  text-transform: uppercase; color: #9ca3af; background: #fafafa; border-bottom: 1px solid #f3f4f6;
+}
+.hr-table td { padding: 12px 16px; font-size: 13px; color: #374151; border-bottom: 1px solid #f9fafb; vertical-align: middle; }
+.hr-table tbody tr:last-child td { border-bottom: none; }
+.hr-table tbody tr.click { cursor: pointer; }
+.hr-table tbody tr.click:hover td { background: #fafafa; }
+.hr-main { font-weight: 600; color: #111827; margin-bottom: 2px; overflow-wrap: anywhere; }
+.hr-main .hr-num { color: #6b7280; font-weight: 600; }
+.hr-sub { font-size: 12px; color: #6b7280; overflow-wrap: anywhere; }
+.hr-muted { color: #6b7280; }
+
+.hr-badge {
+  display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px;
+  font-size: 12px; font-weight: 600; white-space: nowrap;
+}
+.hr-badge.warn { background: #fef3c7; color: #92400e; }
+.hr-badge.ok   { background: #dcfce7; color: #166534; }
+.hr-badge.bad  { background: #fee2e2; color: #b91c1c; }
+
+.hr-empty { text-align: center; padding: 48px 20px; display: grid; gap: 8px; justify-items: center; }
+.hr-empty-title { font-size: 15px; font-weight: 600; color: #111827; }
+.hr-empty-text { font-size: 13px; color: #9ca3af; max-width: 380px; }
+
+/* ---------- Modal ---------- */
+.hr-overlay {
+  position: fixed; inset: 0; z-index: 1300; padding: 16px;
+  background: rgba(15, 23, 42, .45);
+  display: flex; align-items: center; justify-content: center;
+}
+.hr-modal {
+  background: #fff; border-radius: 16px; width: 100%; max-width: 520px;
+  max-height: 90vh; max-height: 90dvh;
+  display: flex; flex-direction: column; overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, .15);
+}
+.hr-modal.wide { max-width: 760px; }
+.hr-modal-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 16px 20px; border-bottom: 1px solid #f3f4f6; flex-shrink: 0;
+  font-size: 16px; font-weight: 600; color: #111827;
+}
+.hr-modal-head b { min-width: 0; overflow-wrap: anywhere; }
+.hr-modal-body { padding: 18px 20px; overflow-y: auto; overscroll-behavior: contain; flex: 1; min-height: 0; }
+.hr-modal-foot {
+  display: flex; justify-content: flex-end; gap: 8px;
+  padding: 12px 20px; border-top: 1px solid #f3f4f6; flex-shrink: 0; background: #fff;
+}
+
+/* ---------- Campos ---------- */
+.hr-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+.hr-field > label { font-size: 12px; font-weight: 500; color: #6b7280; }
+.hr-input {
+  width: 100%; border: 1.5px solid #e5e7eb; border-radius: 8px; padding: 9px 12px;
+  font-size: 14px; color: #111827; font-family: 'Inter', sans-serif; background: #fff; outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.hr-input:focus { border-color: #1a56db; box-shadow: 0 0 0 3px rgba(26, 86, 219, .08); }
+.hr-input::placeholder { color: #d1d5db; }
+.hr-input.sm { width: 170px; padding: 6px 10px; font-size: 13px; }
+
+/* ---------- Vista previa de la cotización ---------- */
+.hr-preview {
+  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;
+  padding: 12px 14px; margin-bottom: 14px; max-height: 170px; overflow-y: auto;
+}
+.hr-preview-group { margin-bottom: 8px; }
+.hr-preview-group:last-child { margin-bottom: 0; }
+.hr-preview-title { font-size: 11px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 2px; }
+.hr-preview-line { font-size: 13px; color: #374151; padding: 1px 0; overflow-wrap: anywhere; }
+
+/* ---------- Checklist ---------- */
+.hr-list-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; font-size: 14px; color: #111827; }
+.hr-checklist { border: 1px solid #e5e7eb; border-radius: 10px; max-height: 280px; overflow-y: auto; }
+.hr-check {
+  display: flex; align-items: center; gap: 12px; padding: 10px 12px; min-height: 46px;
+  border-bottom: 1px solid #f3f4f6; cursor: pointer; font-size: 14px; color: #374151;
+  transition: background .1s;
+}
+.hr-check:last-child { border-bottom: none; }
+.hr-check:hover { background: #f9fafb; }
+.hr-check.on { background: #eff6ff; color: #1e3a8a; font-weight: 500; }
+.hr-check input[type="checkbox"] { width: 18px; height: 18px; accent-color: #1a56db; flex-shrink: 0; }
+.hr-check-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.hr-qty {
+  width: 64px; text-align: center; border: 1.5px solid #93c5fd; border-radius: 8px;
+  padding: 5px 6px; font-size: 14px; font-family: inherit; color: #111827; background: #fff; outline: none;
+}
+.hr-qty:focus { border-color: #1a56db; box-shadow: 0 0 0 3px rgba(26, 86, 219, .12); }
+.hr-hint { font-size: 13px; color: #9ca3af; padding: 12px 2px; }
+
+/* ---------- Detalle / devolución ---------- */
+.hr-meta { font-size: 13px; color: #475569; line-height: 1.7; margin-bottom: 14px; }
+.hr-meta b { color: #111827; }
+.hr-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.hr-ret { width: 100%; border-collapse: collapse; }
+.hr-ret th {
+  padding: 8px 10px; text-align: left; font-size: 11px; font-weight: 600; letter-spacing: .5px;
+  text-transform: uppercase; color: #9ca3af; background: #fafafa; border-bottom: 1px solid #f3f4f6;
+}
+.hr-ret td { padding: 8px 10px; font-size: 13px; color: #374151; border-bottom: 1px solid #f3f4f6; }
+.hr-ret .hr-qty { width: 70px; }
+.hr-ret .falta { font-weight: 700; color: #b91c1c; }
+.hr-ret .ok { font-weight: 700; color: #15803d; }
+.hr-nota { margin-top: 12px; font-size: 13px; color: #374151; }
+
+/* ---------- Catálogo ---------- */
+.hr-add-row { display: flex; gap: 8px; margin-bottom: 12px; }
+.hr-add-row .hr-input { flex: 1; min-width: 0; }
+.hr-list { border: 1px solid #e5e7eb; border-radius: 10px; max-height: 320px; overflow-y: auto; }
+.hr-list-row { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-bottom: 1px solid #f3f4f6; font-size: 14px; color: #374151; }
+.hr-list-row:last-child { border-bottom: none; }
+.hr-list-row span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+
+/* ---------- Móvil ---------- */
+@media (max-width: 767px) {
+  .hr-head h1 { flex: 1 1 100%; }
+  .hr-toggle { flex: 1 1 100%; }
+  .hr-head .hr-btn { flex: 1 1 auto; min-height: 44px; }
+
+  /* Lista: tabla convertida en tarjetas */
+  .hr-table thead { display: none; }
+  .hr-table, .hr-table tbody, .hr-table tr, .hr-table td { display: block; width: 100%; }
+  .hr-table tr { padding: 14px 16px; border-bottom: 1px solid #f3f4f6; }
+  .hr-table tbody tr:last-child { border-bottom: none; }
+  .hr-table tr.click:hover td { background: transparent; }
+  .hr-table td { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 4px 0; border: none; }
+  .hr-table td::before { content: attr(data-label); font-size: 12px; color: #9ca3af; }
+  .hr-table td.hr-cell-main { display: block; padding-bottom: 8px; }
+  .hr-table td.hr-cell-main::before { content: none; }
+
+  /* Modal: hoja que sube desde abajo */
+  .hr-overlay { align-items: flex-end; padding: 0; }
+  .hr-modal, .hr-modal.wide {
+    max-width: none; border-radius: 20px 20px 0 0;
+    max-height: 94vh; max-height: 94dvh;
+  }
+  .hr-modal-head { padding: 14px 16px; }
+  .hr-modal-body { padding: 16px; }
+  .hr-modal-foot { padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); }
+  .hr-modal-foot .hr-btn { flex: 1; min-height: 46px; }
+
+  /* Tamaños cómodos para el dedo (16px evita el zoom de iOS) */
+  .hr-input, .hr-qty { font-size: 16px; }
+  .hr-input { min-height: 44px; }
+  .hr-input.sm { width: 130px; min-height: 38px; }
+  .hr-check { min-height: 52px; }
+  .hr-checklist { max-height: 38vh; }
+  .hr-icon-btn { padding: 10px; }
+}

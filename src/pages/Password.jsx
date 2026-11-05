@@ -48,9 +48,7 @@ import {
   History,
   X,
   Clock,
-  Lock,
-  Mail,
-  ExternalLink
+  Lock
 } from 'lucide-react';
 
 // ───────────────────────── Theme ─────────────────────────
@@ -79,93 +77,284 @@ const colorForName = (name) => {
 const initialsForName = (name) =>
   (name || '?').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
 
-let idCounter = 1000;
-const nextId = () => idCounter++;
+const uid = () => `id-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
-// ───────────────────────── Seed data ─────────────────────────
-const initialClients = [
-  {
-    id: nextId(),
-    client: 'ACCESOS GENÉRICOS',
-    accesses: [
-      { id: nextId(), device: 'DVR DAHUA', user: 'admin', password: 'admin123', gmailPassword: '', ip: '', serial: '', url: '', lastUpdated: '16 May 2024', history: [] },
-      { id: nextId(), device: 'DVR HIKVISION', user: 'admin', password: 'Hik102030', gmailPassword: '', ip: '', serial: '', url: '', lastUpdated: '16 May 2024', history: [] }
-    ]
-  },
-  {
-    id: nextId(),
-    client: 'WILTON PRDO 3',
-    accesses: [
-      { id: nextId(), device: 'HIKCONNECT', user: 'wiltonmotors9@gmail.com', password: '1020304050@v', gmailPassword: '', ip: '', serial: '', url: '', lastUpdated: '16 May 2024', history: [] },
-      { id: nextId(), device: 'DVR HIKVISION', user: 'admin', password: 'Hik12345', gmailPassword: '', ip: '', serial: '', url: '', lastUpdated: '16 May 2024', history: [] }
-    ]
-  },
-  {
-    id: nextId(),
-    client: 'KING REAL SECURITY',
-    accesses: [
-      { id: nextId(), device: 'SERVIDOR', user: 'KR', password: 'KRCOM2024', gmailPassword: '', ip: '192.168.100.108', serial: '', url: '', lastUpdated: '16 May 2024', history: [] },
-      { id: nextId(), device: 'PC 02', user: 'KRSCON01', password: 'conta012025e', gmailPassword: '', ip: '192.168.100.42', serial: '', url: '', lastUpdated: '16 May 2024', history: [] },
-      { id: nextId(), device: 'HIKCONNECT - PRINCIPAL', user: 'cclausen@krsecuritysac.com', password: 'Krsec123', gmailPassword: '', ip: '', serial: '', url: '', lastUpdated: '16 May 2024', history: [] },
-      { id: nextId(), device: 'HIKCONNECT - SECUNDARIO', user: 'jefedeoperacioneskrsecurity@gmail.com', password: '1020304050@Kr', gmailPassword: '', ip: '', serial: '', url: '', lastUpdated: '16 May 2024', history: [] },
-      { id: nextId(), device: 'DVR HIKVISION', user: 'admin', password: 'Hik102030', gmailPassword: '', ip: '', serial: '', url: '', lastUpdated: '16 May 2024', history: [] },
-      { id: nextId(), device: 'WIFI', user: 'KR SECURITY SAC', password: 'king1122', gmailPassword: '', ip: '', serial: '', url: '', lastUpdated: '16 May 2024', history: [] },
-      { id: nextId(), device: 'HUELLERO HIKVISION', user: 'admin', password: 'Hik102030', gmailPassword: '', ip: '', serial: '', url: '', lastUpdated: '16 May 2024', history: [] },
-      { id: nextId(), device: 'IVMS 4200', user: 'admin', password: 'Hik102030', gmailPassword: '', ip: '', serial: '', url: '', lastUpdated: '16 May 2024', history: [] }
-    ]
-  },
-  {
-    id: nextId(),
-    client: 'SERGAS VILLA EL SALVADOR',
-    accesses: [
-      { id: nextId(), device: 'DVR HIKVISION', user: 'admin', password: 'Belmon159', gmailPassword: '', ip: '', serial: '', url: '', lastUpdated: '16 May 2024', history: [] }
-    ]
-  }
-];
-
-const emptyAccess = () => ({
-  id: nextId(), device: '', user: '', password: '', gmailPassword: '', ip: '', serial: '', url: '', lastUpdated: '', history: []
+// ───────────────────────── Datos ─────────────────────────
+// a(dispositivo, usuario/correo, contraseña, { gp: clave Gmail, gmail: correo Gmail, ip, sn: serial, note })
+const a = (device, user, password, o = {}) => ({
+  device, user, password,
+  gmail: o.gmail || '',
+  gmailPassword: o.gp || '',
+  ip: o.ip || '',
+  serial: o.sn || '',
+  note: o.note || ''
 });
 
-// ───────────────────────── Inner app ─────────────────────────
+const DATA = [
+  ['ACCESOS GENÉRICOS', [
+    a('DVR DAHUA', 'admin', 'admin123'),
+    a('DVR HIKVISION', 'admin', 'Hik102030')
+  ]],
+  ['WILTON PRDO 3', [
+    a('HIKCONNECT', 'wiltonmotors9@gmail.com', '1020304050@v'),
+    a('DVR HIKVISION', 'admin', 'Hik12345')
+  ]],
+  ['KING REAL SECURITY', [
+    a('SERVIDOR', 'KR', 'KRCOM2024', { ip: '192.168.100.108' }),
+    a('CENTRO DE CONTROL', 'CENTRO', 'ccontrol1823', { ip: '192.168.100.141', note: 'CARPETA OPERACIONES - OFICINA OPERACIONES' }),
+    a('PC 02', 'KRSCON01', 'conta012025e', { ip: '192.168.100.42' }),
+    a('HIKCONNECT - PRINCIPAL', 'cclausen@krsecuritysac.com', 'Krsec123'),
+    a('HIKCONNECT - SECUNDARIO', 'jefedeoperacioneskrsecurity@gmail.com', '1020304050@Kr'),
+    a('DVR HIKVISION', 'admin', 'Hik102030'),
+    a('WIFI', 'KR SECURITY SAC', 'king1122'),
+    a('HUELLERO HIKVISION', 'admin', 'Hik102030'),
+    a('IVMS 4200', 'admin', 'Hik102030')
+  ]],
+  ['SERGAS VILLA EL SALVADOR', [a('DVR HIKVISION', 'admin', 'Belmon159')]],
+  ['SERGAS AMAUTA', [a('DVR HIKVISION', 'admin', 'Hik12345')]],
+  ['SERGAS CHINCHA', [a('HIKCONNECT - USUARIO SECUNDARIO', 'sergaschincha2026@gmail.com', '1020304050@v')]],
+  ['SERGAS GENERAL', [a('HIKCONNECT', '932500787', 'BELMON159@')]],
+  ['SERGAS CINEGUILLA', [
+    a('DVR 8CH', 'admin', 'BELMON159', { ip: '192.168.101.36' }),
+    a('DVR 4CH', 'admin', 'Hik102030', { ip: '192.168.101.34' })
+  ]],
+  ['ERLINDA NORABUENA', [a('APP ICSEE', 'seguridaddiciembre3@gmail.com', 'Admin@123')]],
+  ['JUAN CUBA', [a('APP SMART LIFE', 'juan.cuba.t10@gmail.com', '1020304050@v')]],
+  ['ALARMAS VALDIVIESO', [a('APP SMART LIFE', 'champiluisfelipe@gmail.com', '1020304050@v')]],
+  ['ASOC. EL BOSQUE', [
+    a('GMAIL', 'elbosquepachacamac@gmail.com', '1020304050@v'),
+    a('DMSS DAHUA/APP SMART LIFE', 'elbosquepachacamac@gmail.com', 'elbosquepachacamac@102030', { gp: 'elbosquepachacamac@102030' })
+  ]],
+  ['FUERZA POLICIAL ATE', [a('APP SMART LIFE', 'vecinosfuerzapolicial@gmail.com', '1020304050@v')]],
+  ['MILAGROS VALDIVIA', [a('APP SMART LIFE', 'mgcamayo20.22@gmail.com', 'Mariafeypaz04')]],
+  ['PARQUE CACERES SJM', [
+    a('DVR HIKVISION', 'admin', 'Hik102030@'),
+    a('HIKCONNECT - PRINCIPAL', 'pqllamitas@gmail.com', '1020304050@v'),
+    a('HIKCONNECT - SECUNDARIO', 'parquelallamita@gmail.com', '1020304050@v')
+  ]],
+  ['PARQUE PERÚ', [
+    a('HIKCONNECT - PRINCIPAL', 'parqueperu01@gmail.com', '102030@vperu', { gp: '1020304050@v' }),
+    a('HIKCONNECT - SECUNDARIO', 'parqueperu02@gmail.com', '102030@vperu', { gp: '1020304050@v' })
+  ]],
+  ['LEYLI CORAZON', [
+    a('DMSS DAHUA', 'leylicorazon13@gmail.com', '1020304050@Vv'),
+    a('DVR DAHUA - CENTRO', 'admin', 'admin123', { sn: '7H02939PAZ6D270' }),
+    a('DVR DAHUA - CALLAO', 'admin', 'admin123', { sn: '8E0820CPAZCE61D' }),
+    a('DVR DAHUA - ALMACEN', 'admin', 'admin123', { sn: '7A09753PAZ48EBD' })
+  ]],
+  ['VICTOR MARTIN CASTRO', [a('DVR HIKVISION', 'admin', 'Hik102030')]],
+  ['URB. SANTA MARIA - CARABAYLLO', [a('SMART PLUG EZVIZ', 'santamarialarma@gmail.com', '1020304050@v')]],
+  ['SRA. GINA - CALLE PISAGUA', [a('APP NEXXT', 'callepisagua@gmail.com', '1020304050v')]],
+  ['SRA. GINA - GORRIONCITO', [a('DVR DAHUA', 'admin', 'admin123')]],
+  ['SRA. GENESIS ALVARADO', [a('DVR HIKVISION', 'admin', 'Hik102030')]],
+  ['LOS PINOS SANTA ANITA', [
+    a('DVR HIKVISION', 'admin', 'Hik102030'),
+    a('CAMARA IP', 'admin', 'Hik102030'),
+    a('HIKCONNECT - PRINCIPAL', 'lospinosparque02@gmail.com', '1020304050@v'),
+    a('HIKCONNECT - SECUNDARIO 1', 'lospinosparque03@gmail.com', '102030@c%'),
+    a('HIKCONNECT - SECUNDARIO 2', 'lospinosparque04@gmail.com', '102030@ca%'),
+    a('HIKCONNECT - SECUNDARIO 3', 'lospinosparque05@gmail.com', '102030@cap%'),
+    a('APP SMART LIFE', 'lospinosparque02@gmail.com', '1020304050@v')
+  ]],
+  ['ROSA CHOY - SANTA ANITA', [a('DVR HIKVISION', 'admin', 'Hik102030')]],
+  ['ROSA CHOY - MERCADO', [a('DVR HIKVISION', 'admin', 'admin123')]],
+  ['UNIDAD VILLA - LAS TORRES', [
+    a('DVR DAHUA', 'admin', 'ocho8888'),
+    a('DMSS - PRINCIPAL', 'villatransportes227@gmail.com', '1020304050@v'),
+    a('DMSS - SECUNDARIO', 'lastorresunidaddevilla@gmail.com', '1020304050@v'),
+    a('DMSS - SECUNDARIO', 'nicolasaunidadvilla@gmail.com', '1020304050@v')
+  ]],
+  ['UNIDAD VILLA - MIYASHIRO', [a('DMSS DAHUA', 'miyashirounidadvilla@gmail.com', '1020304050@v')]],
+  ['EDUARDO VENEGAS', [a('DVR HIKVISION', 'admin', 'Hik102030')]],
+  ['BOMBONAZO ANGAMOS/AVIACIÓN', [
+    a('DVR HIKVISION', 'admin', 'admin123'),
+    a('HIKCONNECT', 'Ingresado por Cliente', 'Ingresado por Cliente')
+  ]],
+  ['RECYCLEAN - SR. PERCY', [
+    a('DVR HIKVISION', 'admin', 'Hik102030'),
+    a('HIKCONNECT', 'eurociclax@gmail.com', 'p3rc1r0ja5*')
+  ]],
+  ['CREPIER - VILLA EL SALVADOR', [
+    a('NVR HIKVISION', 'admin', 'Crepier2025'),
+    a('HIKCONNECT', 'angel.contreras@crepier.com', 'Pierina1145')
+  ]],
+  ['JESUS TRUCIOS - LOS OLIVOS', [a('DVR HIKVISION', 'admin', '159457.jesus')]],
+  ['WILLY AVILA - LURIN', [
+    a('DVR DAHUA', 'admin', 'admin123'),
+    a('ROUTER HIKVISION', 'HIKVISION_1208', '1020304050@v')
+  ]],
+  ['ORG VEC SANTA ROSA - VMT', [
+    a('RF3 SMART 1', 'PRINCIPAL', '1234'),
+    a('RF3 SMART 2', 'CALLE LAS AMERICAS', '1111')
+  ]],
+  ['JESUS JOEL - VES', [
+    a('DVR DAHUA TIENDA', 'admin', 'Admin102030'),
+    a('DVR DAHUA TALLER', 'admin', 'Admin102030'),
+    a('DMSS', 'PRIVADO', 'PRIVADO', { note: 'LO GESTIONO EL USUARIO' })
+  ]],
+  ['VALDERA - SJM', [a('ICSEE', 'valderapingo78@gmail.com', '1020304050@Vv')]],
+  ['SRA. HERRERA - CHORRILLOS', [a('DVR HIKVISION', 'admin', 'Hik102030')]],
+  ['CORPORACION JOTA - PARURO', [a('MESH HIKVISION', 'ALAMACEN-JOTA', 'Jota17@@')]],
+  ['LOS PORTALES DE JAVIER PRADO - ATE', [a('APP SHOCTIX RF3 SMART', 'javierpradoportales@gmail.com', 'PORTALES1')]],
+  ['SRA MELINA', [a('REPETIDORES', 'ALEXA, SALVADOR, SALA', '1020304050@')]],
+  ['MIGUEL HENDRICH - VES', [a('DVR HIKVISION', 'admin', 'Hik102030')]],
+  ['LA CASA DEL POLLO', [a('HIKCONNECT', 'luismary.barreto30@gmail.com', 'LacasadelPollo90')]],
+  ['FERRETERIA CRUZ DE MOTUPE', [
+    a('DVR HIKVISION', 'admin', 'Hik102030'),
+    a('HIKCONNECT', 'ferreteriacruzdemotupe0@gmail.com', '1020304050@v', { gp: '1020304050@v' })
+  ]],
+  ['BELEN - SURCO', [a('ROUTER HIKVISION', 'INTERNET', 'yybt5526')]],
+  ['CALLE SUECIA - PROF. MANUEL', [
+    a('SMART DMS', 'admin', 'Hik12345', { sn: '7D0C9EDPAZ0D1B1' }),
+    a('SMART DMS', 'admin', 'admin123', { gp: '1020304050@v', sn: '8E0820CPAZFDC1E' })
+  ]],
+  ['CALLE PISAGUA', [
+    a('SMART DMS', 'admin', 'Hik12345', { gp: '1020304050@v', gmail: 'callepisagua@gmail.com' }),
+    a('CORREO', 'fabian1112070@gmail.com', 'v14059128@')
+  ]],
+  ['AGUILERA - CALLE ITALIA', [
+    a('GMAIL', 'italiaaguilera4@gmail.com', '1020304050@'),
+    a('SMART LIFE', 'italiaaguilera4@gmail.com', '1020304050@v')
+  ]],
+  ['MILAGRO CUENTA MICROSOFT', [a('CORREO', 'butilerjonathan@hotmail.com', '1020304050@vV')]],
+  ['PARQUE ELOISA ANGULO', [a('CORREO', 'parqueeloisaangulo@gmail.com', '1020304050@v')]],
+  ['JONATHAN SMP GYM', [a('DVR HIKVISION', 'admin', 'Hik102030')]],
+  ['URSULA - SURQUILLO CM', [a('DVR HIKVISION', 'admin', 'Hik102030')]],
+  ['CALLE 2 DE MAYO VMT NUEVA ESPERANZA', [a('SHOCTIX', 'calle02demayo@gmail.com', '1784', { gp: '1020304050@v' })]]
+];
+
+const initialClients = DATA.map(([client, items], ci) => ({
+  id: `seed-${ci}`,
+  client,
+  accesses: items.map((it, ri) => ({
+    id: `seed-${ci}-${ri}`,
+    ...it,
+    lastUpdated: '',
+    history: []
+  }))
+}));
+
+const emptyAccess = () => ({
+  id: uid(), device: '', user: '', password: '', gmail: '', gmailPassword: '', ip: '', serial: '', note: '', lastUpdated: '', history: []
+});
+
+const STORAGE_KEY = 'accesos-v3';
+const loadClients = () => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (e) { /* sin almacenamiento: se usan los datos iniciales */ }
+  return initialClients;
+};
+
+// ───────────────────────── Copiar ─────────────────────────
+async function copyText(text) {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch (e) { /* se intenta el método alternativo */ }
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
+  } catch (e) {
+    return false;
+  }
+}
+
+// ───────────────────────── Línea con su botón de copiar ─────────────────────────
+// Copia SOLO el valor de esta línea.
+function CopyLine({ label, value, secret, onCopy, color }) {
+  const [show, setShow] = useState(false);
+  if (!value) return null;
+  const hidden = secret && !show;
+
+  return (
+    <Stack direction="row" alignItems="center" spacing={0.5} sx={{ minHeight: 32 }}>
+      <Typography variant="caption" color="text.secondary" sx={{ width: 72, flexShrink: 0 }}>
+        {label}
+      </Typography>
+      <Typography
+        sx={{
+          flexGrow: 1,
+          minWidth: 0,
+          fontFamily: 'monospace',
+          fontSize: '0.88rem',
+          fontWeight: 600,
+          color: color || 'text.primary',
+          wordBreak: 'break-all'
+        }}
+      >
+        {hidden ? '••••••••' : value}
+      </Typography>
+      {secret && (
+        <IconButton size="small" onClick={() => setShow(s => !s)} title="Ver/Ocultar">
+          {show ? <EyeOff size={17} /> : <Eye size={17} />}
+        </IconButton>
+      )}
+      <IconButton
+        size="small"
+        onClick={() => onCopy(value, label)}
+        title={`Copiar ${label.toLowerCase()}`}
+        sx={{ color: 'primary.main' }}
+      >
+        <Copy size={17} />
+      </IconButton>
+    </Stack>
+  );
+}
+
+// ───────────────────────── App ─────────────────────────
 function PasswordApp() {
   const muiTheme = useTheme();
   const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
 
-  const [clients, setClients] = useState(initialClients);
+  const [clients, setClients] = useState(loadClients);
   const [searchTerm, setSearchTerm] = useState('');
   const [expanded, setExpanded] = useState(() => new Set());
-  const [revealed, setRevealed] = useState({});
-  const [snackbar, setSnackbar] = useState({ open: false, message: '' });
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [currentPage, setCurrentPage] = useState(1);
   const clientsPerPage = 8;
 
-  // Overflow menu
+  // Menú
   const [menuAnchor, setMenuAnchor] = useState(null);
   const [menuAccess, setMenuAccess] = useState(null);
   const [menuClient, setMenuClient] = useState(null);
 
-  // Add / edit dialog
+  // Agregar / editar
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editClientId, setEditClientId] = useState(null);
   const [formClient, setFormClient] = useState('');
   const [formAccesses, setFormAccesses] = useState([]);
 
-  // History dialog
+  // Historial
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [historyAccess, setHistoryAccess] = useState(null);
-  const [historyRevealed, setHistoryRevealed] = useState({});
 
-  // ── search / pagination ──
+  useEffect(() => {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(clients)); } catch (e) { /* ignorar */ }
+  }, [clients]);
+
+  // ── búsqueda / paginación ──
   const filteredClients = useMemo(() => {
     const term = searchTerm.toLowerCase().trim();
     if (!term) return clients;
     return clients
       .map(c => {
-        const clientMatches = c.client.toLowerCase().includes(term);
-        if (clientMatches) return c;
-        const matches = c.accesses.filter(
-          a => a.device.toLowerCase().includes(term) || a.user.toLowerCase().includes(term)
+        if (c.client.toLowerCase().includes(term)) return c;
+        const matches = c.accesses.filter(x =>
+          [x.device, x.user, x.gmail, x.ip, x.serial, x.note].some(v => (v || '').toLowerCase().includes(term))
         );
         return matches.length ? { ...c, accesses: matches } : null;
       })
@@ -188,12 +377,12 @@ function PasswordApp() {
   const totalAccesses = filteredClients.reduce((s, c) => s + c.accesses.length, 0);
 
   // ── helpers ──
-  const toast = (message) => setSnackbar({ open: true, message });
+  const toast = (message, severity = 'success') => setSnackbar({ open: true, message, severity });
 
-  const copy = (text, label) => {
+  const copy = async (text, label) => {
     if (!text) return;
-    navigator.clipboard.writeText(text);
-    toast(`${label} copiado`);
+    const ok = await copyText(text);
+    toast(ok ? `${label} copiado` : `No se pudo copiar ${label.toLowerCase()}`, ok ? 'success' : 'error');
   };
 
   const toggleExpanded = (clientId) => {
@@ -203,8 +392,6 @@ function PasswordApp() {
       return next;
     });
   };
-
-  const toggleReveal = (accessId) => setRevealed(prev => ({ ...prev, [accessId]: !prev[accessId] }));
 
   const openMenu = (event, client, access) => {
     event.stopPropagation();
@@ -219,50 +406,68 @@ function PasswordApp() {
     setEditClientId(null); setFormClient(''); setFormAccesses([emptyAccess()]); setIsModalOpen(true);
   };
   const openEditClient = (clientEntry) => {
-    setEditClientId(clientEntry.id);
-    setFormClient(clientEntry.client);
-    setFormAccesses(clientEntry.accesses.map(a => ({ ...a })));
+    // Se busca el cliente completo (la vista filtrada puede mostrar solo parte de sus accesos)
+    const full = clients.find(c => c.id === clientEntry.id) || clientEntry;
+    setEditClientId(full.id);
+    setFormClient(full.client);
+    setFormAccesses(full.accesses.map(x => ({ ...x })));
     setIsModalOpen(true);
   };
   const openQuickAdd = (clientEntry) => {
-    setEditClientId(clientEntry.id);
-    setFormClient(clientEntry.client);
-    setFormAccesses([...clientEntry.accesses.map(a => ({ ...a })), emptyAccess()]);
+    const full = clients.find(c => c.id === clientEntry.id) || clientEntry;
+    setEditClientId(full.id);
+    setFormClient(full.client);
+    setFormAccesses([...full.accesses.map(x => ({ ...x })), emptyAccess()]);
     setIsModalOpen(true);
   };
   const closeModal = () => { setIsModalOpen(false); setEditClientId(null); setFormAccesses([]); };
 
   const updateFormAccess = (index, field, value) =>
-    setFormAccesses(prev => prev.map((a, i) => (i === index ? { ...a, [field]: value } : a)));
+    setFormAccesses(prev => prev.map((x, i) => (i === index ? { ...x, [field]: value } : x)));
   const addFormAccessRow = () => setFormAccesses(prev => [...prev, emptyAccess()]);
   const removeFormAccessRow = (index) => setFormAccesses(prev => prev.filter((_, i) => i !== index));
 
   const isFormValid = formClient.trim() && formAccesses.length > 0 &&
-    formAccesses.every(a => a.device.trim() && a.password.trim());
+    formAccesses.every(x => x.device.trim());
+
+  const clean = (x) => ({
+    ...x,
+    device: x.device.trim(),
+    user: (x.user || '').trim(),
+    password: (x.password || '').trim(),
+    gmail: (x.gmail || '').trim(),
+    gmailPassword: (x.gmailPassword || '').trim(),
+    ip: (x.ip || '').trim(),
+    serial: (x.serial || '').trim(),
+    note: (x.note || '').trim()
+  });
 
   const saveClient = () => {
     if (!isFormValid) return;
-    const currentDate = new Date().toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' });
+    const currentDate = new Date().toLocaleString('es-PE', {
+      day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
 
     if (editClientId) {
       setClients(prev => prev.map(c => {
         if (c.id !== editClientId) return c;
-        const prevById = Object.fromEntries(c.accesses.map(a => [a.id, a]));
-        const newAccesses = formAccesses.map(a => {
-          const prevAccess = prevById[a.id];
-          if (!prevAccess) return { ...a, lastUpdated: currentDate, history: [] };
-          const changed = prevAccess.password !== a.password || prevAccess.gmailPassword !== a.gmailPassword;
+        const prevById = Object.fromEntries(c.accesses.map(x => [x.id, x]));
+        const newAccesses = formAccesses.map(raw => {
+          const x = clean(raw);
+          const old = prevById[x.id];
+          if (!old) return { ...x, lastUpdated: currentDate, history: [] };
+          const changed = old.password !== x.password || (old.gmailPassword || '') !== x.gmailPassword;
           const history = changed
-            ? [{ password: prevAccess.password, gmailPassword: prevAccess.gmailPassword, date: prevAccess.lastUpdated || currentDate }, ...(prevAccess.history || [])]
-            : prevAccess.history || [];
-          return { ...a, lastUpdated: changed ? currentDate : prevAccess.lastUpdated, history };
+            ? [{ password: old.password || '', gmailPassword: old.gmailPassword || '', date: currentDate }, ...(old.history || [])]
+            : old.history || [];
+          return { ...x, lastUpdated: changed ? currentDate : old.lastUpdated, history };
         });
         return { ...c, client: formClient.trim(), accesses: newAccesses };
       }));
     } else {
-      const newId = nextId();
+      const newId = uid();
       setClients(prev => [
-        { id: newId, client: formClient.trim(), accesses: formAccesses.map(a => ({ ...a, lastUpdated: currentDate, history: [] })) },
+        { id: newId, client: formClient.trim(), accesses: formAccesses.map(raw => ({ ...clean(raw), lastUpdated: currentDate, history: [] })) },
         ...prev
       ]);
       setExpanded(prev => new Set(prev).add(newId));
@@ -280,13 +485,23 @@ function PasswordApp() {
   const deleteAccess = (clientId, accessId) => {
     if (!window.confirm('¿Eliminar este acceso?')) return;
     setClients(prev =>
-      prev.map(c => (c.id === clientId ? { ...c, accesses: c.accesses.filter(a => a.id !== accessId) } : c))
+      prev.map(c => (c.id === clientId ? { ...c, accesses: c.accesses.filter(x => x.id !== accessId) } : c))
         .filter(c => c.accesses.length > 0)
     );
     toast('Acceso eliminado');
   };
 
-  const openHistory = (access) => { setHistoryAccess(access); setHistoryRevealed({}); setIsHistoryOpen(true); };
+  const openHistory = (access) => { setHistoryAccess(access); setIsHistoryOpen(true); };
+
+  // El historial se lee siempre del dato actual
+  const liveHistoryAccess = useMemo(() => {
+    if (!historyAccess) return null;
+    for (const c of clients) {
+      const f = c.accesses.find(x => x.id === historyAccess.id);
+      if (f) return f;
+    }
+    return historyAccess;
+  }, [clients, historyAccess]);
 
   // ───────────────────────── Render ─────────────────────────
   return (
@@ -307,7 +522,7 @@ function PasswordApp() {
           <TextField
             fullWidth
             size="small"
-            placeholder="Buscar cliente, dispositivo o usuario..."
+            placeholder="Buscar cliente, dispositivo, usuario, IP o serial..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             sx={{
@@ -370,71 +585,58 @@ function PasswordApp() {
                 {isOpen ? <ChevronDown size={20} color="#9CA3AF" /> : <ChevronRight size={20} color="#9CA3AF" />}
               </ListItemButton>
 
-              <Collapse in={isOpen} timeout={150}>
+              <Collapse in={isOpen} timeout={150} unmountOnExit>
                 <Divider />
                 <List disablePadding>
-                  {clientEntry.accesses.map((access) => {
-                    const isRevealed = !!revealed[access.id];
-                    return (
-                      <Box key={access.id} sx={{ px: 2, py: 1.25, borderBottom: '1px solid #F3F4F6', '&:last-of-type': { borderBottom: 'none' } }}>
-                        <Stack direction="row" alignItems="flex-start" spacing={1}>
-                          <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-                            <Typography sx={{ fontWeight: 600, fontSize: '0.9rem' }} noWrap>
-                              {access.device}
-                            </Typography>
-                            <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mt: 0.25 }}>
-                              <Typography variant="body2" color="text.secondary" noWrap sx={{ maxWidth: 150 }}>
-                                {access.user || 'Sin usuario'}
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary">·</Typography>
-                              <Typography
-                                variant="body2"
-                                sx={{ fontFamily: 'monospace', letterSpacing: 0.5, color: '#B45309', fontWeight: 600 }}
-                              >
-                                {isRevealed ? access.password : '••••••••'}
-                              </Typography>
-                            </Stack>
-                            {(access.ip || access.serial || access.url) && (
-                              <Stack direction="row" spacing={0.75} flexWrap="wrap" sx={{ mt: 0.6, rowGap: 0.5 }}>
-                                {access.ip && <Chip size="small" variant="outlined" label={`IP ${access.ip}`} sx={{ fontSize: '0.7rem', height: 22 }} />}
-                                {access.serial && <Chip size="small" variant="outlined" label={`S/N ${access.serial}`} sx={{ fontSize: '0.7rem', height: 22 }} />}
-                                {access.url && (
-                                  <Chip
-                                    size="small"
-                                    variant="outlined"
-                                    icon={<ExternalLink size={12} />}
-                                    label="Abrir enlace"
-                                    clickable
-                                    component="a"
-                                    href={access.url.startsWith('http') ? access.url : `https://${access.url}`}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    sx={{ fontSize: '0.7rem', height: 22 }}
-                                  />
-                                )}
-                              </Stack>
-                            )}
-                          </Box>
-                          <Stack direction="row" spacing={0.25} sx={{ flexShrink: 0 }}>
-                            <IconButton size="small" onClick={() => toggleReveal(access.id)} title="Ver/Ocultar contraseña">
-                              {isRevealed ? <EyeOff size={17} /> : <Eye size={17} />}
-                            </IconButton>
-                            <IconButton
-                              size="small"
-                              onClick={() => copy(access.password, 'Contraseña')}
-                              title="Copiar contraseña"
-                              sx={{ color: 'primary.main' }}
-                            >
-                              <Copy size={17} />
-                            </IconButton>
-                            <IconButton size="small" onClick={(e) => openMenu(e, clientEntry, access)} title="Más opciones">
-                              <MoreVertical size={17} />
-                            </IconButton>
-                          </Stack>
+                  {clientEntry.accesses.map((access) => (
+                    <Box key={access.id} sx={{ px: 2, py: 1.25, borderBottom: '1px solid #F3F4F6', '&:last-of-type': { borderBottom: 'none' } }}>
+                      <Stack direction="row" alignItems="center">
+                        <Typography sx={{ flexGrow: 1, fontWeight: 700, fontSize: '0.9rem' }} noWrap>
+                          {access.device}
+                        </Typography>
+                        <IconButton size="small" onClick={(e) => openMenu(e, clientEntry, access)} title="Más opciones">
+                          <MoreVertical size={17} />
+                        </IconButton>
+                      </Stack>
+
+                      <CopyLine
+                        label={(access.user || '').includes('@') ? 'Correo' : 'Usuario'}
+                        value={access.user}
+                        onCopy={copy}
+                      />
+                      <CopyLine label="Contraseña" value={access.password} secret onCopy={copy} color="#B45309" />
+                      <CopyLine label="Gmail" value={access.gmail} onCopy={copy} />
+                      <CopyLine label="Clave Gmail" value={access.gmailPassword} secret onCopy={copy} color="#B45309" />
+
+                      {(access.ip || access.serial || access.note) && (
+                        <Stack direction="row" spacing={0.75} flexWrap="wrap" sx={{ mt: 0.6, rowGap: 0.5 }}>
+                          {access.ip && (
+                            <Chip
+                              size="small" variant="outlined" clickable
+                              label={`IP ${access.ip}`}
+                              onClick={() => copy(access.ip, 'IP')}
+                              sx={{ fontSize: '0.75rem', height: 24 }}
+                            />
+                          )}
+                          {access.serial && (
+                            <Chip
+                              size="small" variant="outlined" clickable
+                              label={`S/N ${access.serial}`}
+                              onClick={() => copy(access.serial, 'Serial')}
+                              sx={{ fontSize: '0.75rem', height: 24 }}
+                            />
+                          )}
+                          {access.note && (
+                            <Chip
+                              size="small" variant="outlined"
+                              label={access.note}
+                              sx={{ fontSize: '0.75rem', height: 24, maxWidth: '100%' }}
+                            />
+                          )}
                         </Stack>
-                      </Box>
-                    );
-                  })}
+                      )}
+                    </Box>
+                  ))}
                 </List>
               </Collapse>
             </Paper>
@@ -454,7 +656,7 @@ function PasswordApp() {
         )}
       </Box>
 
-      {/* ── FAB agregar cliente ── */}
+      {/* ── Agregar cliente ── */}
       <Fab
         color="primary"
         onClick={openNewClient}
@@ -464,18 +666,8 @@ function PasswordApp() {
         <Plus size={24} />
       </Fab>
 
-      {/* ── Menú contextual por acceso ── */}
+      {/* ── Menú por acceso ── */}
       <Menu anchorEl={menuAnchor} open={!!menuAnchor} onClose={closeMenu}>
-        {menuAccess?.user && (
-          <MenuItem onClick={() => { copy(menuAccess.user, 'Usuario'); closeMenu(); }}>
-            <Copy size={16} style={{ marginRight: 10 }} /> Copiar usuario
-          </MenuItem>
-        )}
-        {menuAccess?.gmailPassword && (
-          <MenuItem onClick={() => { copy(menuAccess.gmailPassword, 'Contraseña Gmail'); closeMenu(); }}>
-            <Mail size={16} style={{ marginRight: 10 }} /> Copiar clave Gmail
-          </MenuItem>
-        )}
         <MenuItem onClick={() => { openHistory(menuAccess); closeMenu(); }}>
           <History size={16} style={{ marginRight: 10 }} /> Ver historial
         </MenuItem>
@@ -491,14 +683,8 @@ function PasswordApp() {
         </MenuItem>
       </Menu>
 
-      {/* ── Diálogo: crear/editar cliente ── */}
-      <Dialog
-        open={isModalOpen}
-        onClose={closeModal}
-        fullScreen={isMobile}
-        fullWidth
-        maxWidth="sm"
-      >
+      {/* ── Crear / editar cliente ── */}
+      <Dialog open={isModalOpen} onClose={closeModal} fullScreen={isMobile} fullWidth maxWidth="sm">
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {isMobile && (
             <IconButton edge="start" onClick={closeModal} sx={{ mr: 0.5 }}>
@@ -554,12 +740,12 @@ function PasswordApp() {
                   </Stack>
                   <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
                     <TextField
-                      fullWidth size="small" label="Contraseña Gmail (opcional)" placeholder="Solo si aplica"
-                      value={access.gmailPassword} onChange={(e) => updateFormAccess(index, 'gmailPassword', e.target.value)}
+                      fullWidth size="small" label="Correo Gmail (opcional)" placeholder="Solo si aplica"
+                      value={access.gmail} onChange={(e) => updateFormAccess(index, 'gmail', e.target.value)}
                     />
                     <TextField
-                      fullWidth size="small" label="Enlace (opcional)" placeholder="www.pagina.com"
-                      value={access.url} onChange={(e) => updateFormAccess(index, 'url', e.target.value)}
+                      fullWidth size="small" label="Clave Gmail (opcional)" placeholder="Solo si aplica"
+                      value={access.gmailPassword} onChange={(e) => updateFormAccess(index, 'gmailPassword', e.target.value)}
                     />
                   </Stack>
                   <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
@@ -572,6 +758,10 @@ function PasswordApp() {
                       value={access.serial} onChange={(e) => updateFormAccess(index, 'serial', e.target.value)}
                     />
                   </Stack>
+                  <TextField
+                    fullWidth size="small" label="Nota (opcional)"
+                    value={access.note} onChange={(e) => updateFormAccess(index, 'note', e.target.value)}
+                  />
                 </Stack>
               </Paper>
             ))}
@@ -588,7 +778,7 @@ function PasswordApp() {
           {editClientId && (
             <Button
               fullWidth
-              onClick={() => { closeModal(); deleteClient(editClientId); }}
+              onClick={() => { const id = editClientId; closeModal(); deleteClient(id); }}
               startIcon={<Trash2 size={16} />}
               sx={{ mt: 3, color: 'error.main', bgcolor: '#FEE2E2', '&:hover': { bgcolor: '#FECACA' } }}
             >
@@ -604,39 +794,29 @@ function PasswordApp() {
         </DialogActions>
       </Dialog>
 
-      {/* ── Diálogo: historial ── */}
+      {/* ── Historial ── */}
       <Dialog open={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} fullWidth maxWidth="xs">
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <History size={20} /> Historial de cambios
         </DialogTitle>
         <DialogContent dividers>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Contraseñas anteriores de <strong>{historyAccess?.device}</strong>
+            Contraseñas anteriores de <strong>{liveHistoryAccess?.device}</strong>
           </Typography>
-          {historyAccess?.history?.length > 0 ? (
+          {liveHistoryAccess?.history?.length > 0 ? (
             <Stack spacing={1}>
-              {historyAccess.history.map((h, index) => (
-                <Stack
-                  key={index}
-                  direction="row"
-                  alignItems="center"
-                  spacing={1}
-                  sx={{ border: '1px solid #E5E7EB', borderRadius: 2, p: 1.2 }}
-                >
-                  <Clock size={14} color="#9CA3AF" />
-                  <Typography variant="caption" color="text.secondary" sx={{ minWidth: 78 }}>
-                    {h.date}
-                  </Typography>
-                  <Typography sx={{ fontFamily: 'monospace', flexGrow: 1 }}>
-                    {historyRevealed[index] ? h.password : '••••••••'}
-                  </Typography>
-                  <IconButton size="small" onClick={() => setHistoryRevealed(p => ({ ...p, [index]: !p[index] }))}>
-                    {historyRevealed[index] ? <EyeOff size={15} /> : <Eye size={15} />}
-                  </IconButton>
-                  <IconButton size="small" onClick={() => copy(h.password, 'Contraseña anterior')}>
-                    <Copy size={15} />
-                  </IconButton>
-                </Stack>
+              {liveHistoryAccess.history.map((h, index) => (
+                <Box key={index} sx={{ border: '1px solid #E5E7EB', borderRadius: 2, p: 1.2 }}>
+                  <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 0.25 }}>
+                    <Clock size={14} color="#9CA3AF" />
+                    <Typography variant="caption" color="text.secondary">{h.date}</Typography>
+                  </Stack>
+                  <CopyLine label="Contraseña" value={h.password} secret onCopy={copy} />
+                  <CopyLine label="Clave Gmail" value={h.gmailPassword} secret onCopy={copy} />
+                  {!h.password && !h.gmailPassword && (
+                    <Typography variant="body2" color="text.secondary">(vacía)</Typography>
+                  )}
+                </Box>
               ))}
             </Stack>
           ) : (
@@ -651,14 +831,14 @@ function PasswordApp() {
         </DialogActions>
       </Dialog>
 
-      {/* ── Snackbar de confirmación ── */}
+      {/* ── Aviso ── */}
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={2000}
-        onClose={() => setSnackbar({ open: false, message: '' })}
+        autoHideDuration={1800}
+        onClose={() => setSnackbar(s => ({ ...s, open: false }))}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert severity="success" variant="filled" sx={{ borderRadius: 5 }}>
+        <Alert severity={snackbar.severity} variant="filled" sx={{ borderRadius: 5 }}>
           {snackbar.message}
         </Alert>
       </Snackbar>

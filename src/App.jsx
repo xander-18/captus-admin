@@ -20,6 +20,7 @@ import Usuarioroles from './pages/Seguridad/Usuarioroles';
 import Usuarios from './pages/Seguridad/Usuarios';
 
 import './index.css';
+import Herramientas from './pages/operaciones/Herramientas';
 
 export default function App() {
   return (
@@ -40,6 +41,9 @@ export default function App() {
                       <Route path="/productos" element={<Productos />} />
                       <Route path="/cotizaciones" element={<Cotizaciones />} />
                       <Route path="/passwords" element={<Passwords />} />
+                      <Route path="/ventas" element={<Ventas />} />
+                      <Route path="/herramientas" element={<Herramientas />} />
+
 
                       {/* Seguridad */}
                       {/* <Route path="/seguridad/modulos" element={<Modulos />} />

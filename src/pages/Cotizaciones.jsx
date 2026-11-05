@@ -103,7 +103,7 @@ const margenDe = (item) => item.margen ?? margenDesdePrecio(item.costo, item.pre
 //   ventaTotal = subtotal + igv  → es el total final que ve el cliente
 // El margen se calcula sobre el subtotal: el IGV es un impuesto, no ganancia.
 // ---------------------------------------------------------------------------
-function calcularResumen(q) {
+export function calcularResumen(q) {
   const suma = (arr) =>
     (arr || []).reduce(
       (a, it) => ({
