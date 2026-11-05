@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { Plus, Printer, Wrench, X, Trash2 } from "lucide-react";
+import { Plus, Printer, Wrench, X, Trash2, Eye } from "lucide-react";
 import { CATALOGO } from "../../data/kits";
 import { previsualizarSalidaPDF, nombreArchivoSalida } from "../../utils/salidaPdf"; // ajusta la ruta a donde pongas salidaPDF.js
 import {
   getCotizaciones, getHerramientas, postHerramienta, deleteHerramienta,
   getSalidas, getSalida, postSalida, postDevolucion,
+  postSalidaItems, // NUEVO: agrega herramientas a una salida que sigue en obra
 } from "../../api";
 
 // Solo las cotizaciones en estos estados permiten sacar herramientas.
@@ -73,6 +74,112 @@ function VistaPreviaPDF({ url, nombre, onClose }) {
   );
 }
 
+/* ── Selector de herramientas (lo usan "Nueva salida" y "Agregar más a una salida") ──
+   · Marcar con ✓ y poner cantidad
+   · Si la herramienta no existe: se escribe abajo y se agrega al catálogo sola, ya marcada
+   · `excluir` = ids que NO deben aparecer (porque ya están en la salida)            */
+function SelectorHerramientas({ tools, sel, setSel, recargar, excluir = [] }) {
+  const [filtro, setFiltro] = useState("");
+  const [nueva, setNueva] = useState("");
+  const [creando, setCreando] = useState(false);
+
+  const disponibles = tools.filter((t) => !excluir.includes(t.id));
+  const q = filtro.trim().toLowerCase();
+  const visibles = disponibles.filter((t) => !q || t.nombre.toLowerCase().includes(q));
+  const n = Object.keys(sel).length;
+
+  const toggle = (id) =>
+    setSel((s) => {
+      const nuevo = { ...s };
+      if (nuevo[id]) delete nuevo[id]; else nuevo[id] = 1;
+      return nuevo;
+    });
+  const setCant = (id, v) => setSel((s) => ({ ...s, [id]: Math.max(1, parseInt(v) || 1) }));
+
+  const crear = async () => {
+    const nombre = nueva.trim();
+    if (!nombre) return alert("Escribe el nombre de la herramienta nueva");
+
+    // Si ya existe en el catálogo, solo la marcamos (no se duplica)
+    const existente = tools.find((t) => t.nombre.trim().toLowerCase() === nombre.toLowerCase());
+    if (existente) {
+      if (excluir.includes(existente.id)) {
+        alert("Esa herramienta ya está en esta salida");
+      } else {
+        setSel((s) => ({ ...s, [existente.id]: s[existente.id] || 1 }));
+        setNueva("");
+        setFiltro("");
+      }
+      return;
+    }
+
+    setCreando(true);
+    try {
+      await postHerramienta({ nombre, marca: "", observacion: "" });
+      const lista = await recargar();
+      const creada = lista.find((t) => t.nombre.trim().toLowerCase() === nombre.toLowerCase());
+      if (creada) setSel((s) => ({ ...s, [creada.id]: 1 }));
+      setNueva("");
+      setFiltro("");
+    } catch (e) {
+      alert("No se pudo agregar: " + e.message);
+    } finally {
+      setCreando(false);
+    }
+  };
+
+  return (
+    <>
+      <div className="hr-list-head">
+        <b>Herramientas ({n} marcadas)</b>
+        <input
+          type="text" className="hr-input sm" value={filtro}
+          onChange={(e) => setFiltro(e.target.value)} placeholder="Buscar…"
+        />
+      </div>
+
+      {disponibles.length === 0 ? (
+        <div className="hr-hint">
+          {tools.length === 0
+            ? "Aún no hay herramientas. Escribe una abajo para crearla."
+            : "Ya agregaste todas las herramientas del catálogo. Escribe una abajo para crear otra."}
+        </div>
+      ) : visibles.length === 0 ? (
+        <div className="hr-hint">Ninguna herramienta se llama así. Puedes crearla abajo.</div>
+      ) : (
+        <div className="hr-checklist">
+          {visibles.map((t) => (
+            <label key={t.id} className={`hr-check${sel[t.id] ? " on" : ""}`}>
+              <input type="checkbox" checked={!!sel[t.id]} onChange={() => toggle(t.id)} />
+              <span className="hr-check-name">{t.nombre}</span>
+              {sel[t.id] && (
+                <input
+                  type="number" min="1" className="hr-qty"
+                  value={sel[t.id]} onClick={(e) => e.stopPropagation()}
+                  onChange={(e) => setCant(t.id, e.target.value)}
+                  aria-label={`Cantidad de ${t.nombre}`}
+                />
+              )}
+            </label>
+          ))}
+        </div>
+      )}
+
+      <div className="hr-quick-label">¿No la encuentras? Escribe su nombre y se agrega sola:</div>
+      <div className="hr-quick">
+        <input
+          type="text" className="hr-input" value={nueva} placeholder="Ej. Escalera de 3 metros"
+          onChange={(e) => setNueva(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && crear()}
+        />
+        <button className="hr-btn" onClick={crear} disabled={creando}>
+          <Plus size={16} /> {creando ? "Agregando…" : "Agregar"}
+        </button>
+      </div>
+    </>
+  );
+}
+
 /* ── Página ── */
 export default function Herramientas() {
   const [salidas, setSalidas] = useState([]);
@@ -81,11 +188,22 @@ export default function Herramientas() {
   const [error, setError] = useState("");
   const [modal, setModal] = useState(null); // { tipo: 'nueva' | 'catalogo' | 'detalle', id? }
   const [pdf, setPdf] = useState(null); // { url, nombre } de la vista previa abierta
+  const [abriendoPdf, setAbriendoPdf] = useState(null); // id de la salida cuyo PDF se está preparando
 
-  const verPDF = (s) =>
-    previsualizarSalidaPDF(s, { fecha: fechaHora(s.fecha_salida) })
-      .then((url) => setPdf({ url, nombre: nombreArchivoSalida(s) }))
-      .catch((e) => alert("No se pudo generar el PDF: " + e.message));
+  // Acepta una salida completa (con items) o solo su id. Si es id, la trae completa primero.
+  const verPDF = async (salidaOId) => {
+    const id = typeof salidaOId === "object" ? salidaOId.id : salidaOId;
+    setAbriendoPdf(id);
+    try {
+      const s = typeof salidaOId === "object" ? salidaOId : await getSalida(salidaOId);
+      const url = await previsualizarSalidaPDF(s, { fecha: fechaHora(s.fecha_salida) });
+      setPdf({ url, nombre: nombreArchivoSalida(s) });
+    } catch (e) {
+      alert("No se pudo generar el PDF: " + e.message);
+    } finally {
+      setAbriendoPdf(null);
+    }
+  };
   const cerrarPDF = () => {
     if (pdf) URL.revokeObjectURL(pdf.url);
     setPdf(null);
@@ -139,7 +257,7 @@ export default function Herramientas() {
           <table className="hr-table">
             <thead>
               <tr>
-                <th>Proyecto</th><th>Responsable</th><th>Fecha</th><th>Herram.</th><th>Estado</th>
+                <th>Proyecto</th><th>Responsable</th><th>Fecha</th><th>Herram.</th><th>Estado</th><th>PDF</th>
               </tr>
             </thead>
             <tbody>
@@ -164,6 +282,18 @@ export default function Herramientas() {
                       <span className="hr-badge ok">Devuelta</span>
                     )}
                   </td>
+                  <td data-label="PDF">
+                    {/* stopPropagation: así el ojito NO abre el detalle, solo el PDF */}
+                    <button
+                      className="hr-btn small"
+                      title="Ver PDF"
+                      aria-label={`Ver PDF de ${s.cliente || "la salida"}`}
+                      disabled={abriendoPdf === s.id}
+                      onClick={(e) => { e.stopPropagation(); verPDF(s.id); }}
+                    >
+                      <Eye size={15} /> {abriendoPdf === s.id ? "Abriendo…" : "Ver PDF"}
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -182,7 +312,7 @@ export default function Herramientas() {
         />
       )}
       {modal?.tipo === "detalle" && (
-        <DetalleSalida id={modal.id} onClose={() => setModal(null)} onChanged={cargar} onImprimir={verPDF} />
+        <DetalleSalida id={modal.id} onClose={() => setModal(null)} onChanged={cargar} onVerPDF={verPDF} />
       )}
       {modal?.tipo === "catalogo" && <Catalogo onClose={() => setModal(null)} />}
       {pdf && <VistaPreviaPDF url={pdf.url} nombre={pdf.nombre} onClose={cerrarPDF} />}
@@ -198,8 +328,9 @@ function NuevaSalida({ onClose, onSaved }) {
   const [cotId, setCotId] = useState("");
   const [responsable, setResponsable] = useState("");
   const [sel, setSel] = useState({}); // herramienta_id -> cantidad
-  const [filtro, setFiltro] = useState("");
   const [guardando, setGuardando] = useState(false);
+
+  const recargarTools = () => getHerramientas().then((h) => { setTools(h); return h; });
 
   useEffect(() => {
     Promise.all([getCotizaciones(), getHerramientas()])
@@ -213,15 +344,6 @@ function NuevaSalida({ onClose, onSaved }) {
 
   const q = cots.find((x) => x.id === cotId);
   const n = Object.keys(sel).length;
-  const visibles = tools.filter((t) => t.nombre.toLowerCase().includes(filtro.toLowerCase()));
-
-  const toggle = (id) =>
-    setSel((s) => {
-      const nuevo = { ...s };
-      if (nuevo[id]) delete nuevo[id]; else nuevo[id] = 1;
-      return nuevo;
-    });
-  const setCant = (id, v) => setSel((s) => ({ ...s, [id]: Math.max(1, parseInt(v) || 1) }));
 
   const guardar = async () => {
     if (!q) return alert("Elige la cotización");
@@ -306,54 +428,65 @@ function NuevaSalida({ onClose, onSaved }) {
             />
           </div>
 
-          <div className="hr-list-head">
-            <b>Herramientas ({n} marcadas)</b>
-            <input
-              type="text" className="hr-input sm" value={filtro}
-              onChange={(e) => setFiltro(e.target.value)} placeholder="Filtrar…"
-            />
-          </div>
-
-          {tools.length === 0 ? (
-            <div className="hr-hint">Aún no hay herramientas. Agrégalas en “Catálogo”.</div>
-          ) : (
-            <div className="hr-checklist">
-              {visibles.map((t) => (
-                <label key={t.id} className={`hr-check${sel[t.id] ? " on" : ""}`}>
-                  <input type="checkbox" checked={!!sel[t.id]} onChange={() => toggle(t.id)} />
-                  <span className="hr-check-name">{t.nombre}</span>
-                  {sel[t.id] && (
-                    <input
-                      type="number" min="1" className="hr-qty"
-                      value={sel[t.id]} onClick={(e) => e.stopPropagation()}
-                      onChange={(e) => setCant(t.id, e.target.value)}
-                    />
-                  )}
-                </label>
-              ))}
-            </div>
-          )}
+          <SelectorHerramientas tools={tools} sel={sel} setSel={setSel} recargar={recargarTools} />
         </>
       )}
     </Modal>
   );
 }
 
-/* ── Detalle: reimprimir y registrar devolución ── */
-function DetalleSalida({ id, onClose, onChanged, onImprimir }) {
+/* ── Detalle: ver PDF, agregar más herramientas y registrar devolución ── */
+function DetalleSalida({ id, onClose, onChanged, onVerPDF }) {
   const [s, setS] = useState(null);
   const [dev, setDev] = useState({}); // item.id -> cantidad devuelta
   const [nota, setNota] = useState("");
   const [guardando, setGuardando] = useState(false);
 
+  // Panel "Agregar más herramientas"
+  const [agregando, setAgregando] = useState(false);
+  const [tools, setTools] = useState([]);
+  const [nuevos, setNuevos] = useState({}); // herramienta_id -> cantidad
+  const [guardandoNuevos, setGuardandoNuevos] = useState(false);
+
+  // Trae la salida actualizada y conserva lo que ya se escribió en "Devuelta"
+  const recargarSalida = () =>
+    getSalida(id).then((d) => {
+      setS(d);
+      setDev((prev) => Object.fromEntries(d.items.map((i) => [i.id, prev[i.id] ?? i.cantidad])));
+      return d;
+    });
+
+  const recargarTools = () => getHerramientas().then((h) => { setTools(h); return h; });
+
   useEffect(() => {
-    getSalida(id)
-      .then((d) => {
-        setS(d);
-        setDev(Object.fromEntries(d.items.map((i) => [i.id, i.cantidad])));
-      })
-      .catch((e) => alert(e.message));
+    recargarSalida().catch((e) => alert(e.message));
   }, [id]);
+
+  const abrirAgregar = () => {
+    setAgregando(true);
+    recargarTools().catch((e) => alert(e.message));
+  };
+  const cancelarAgregar = () => {
+    setAgregando(false);
+    setNuevos({});
+  };
+
+  const agregarALaSalida = async () => {
+    const items = Object.entries(nuevos).map(([hid, cantidad]) => ({ herramienta_id: +hid, cantidad }));
+    if (!items.length) return alert("Marca al menos una herramienta para agregar");
+    setGuardandoNuevos(true);
+    try {
+      await postSalidaItems(id, { items });
+      await recargarSalida();
+      setNuevos({});
+      setAgregando(false);
+      onChanged();
+    } catch (e) {
+      alert("No se pudieron agregar: " + e.message);
+    } finally {
+      setGuardandoNuevos(false);
+    }
+  };
 
   const cerrar = async () => {
     if (!window.confirm("¿Registrar la devolución y cerrar esta salida? No se puede deshacer.")) return;
@@ -375,11 +508,17 @@ function DetalleSalida({ id, onClose, onChanged, onImprimir }) {
   if (!s) return <Modal title="Salida" onClose={onClose}><div className="hr-hint">Cargando…</div></Modal>;
   const abierta = s.estado === "salida";
 
+  // Herramientas que ya están en esta salida (para no ofrecerlas otra vez)
+  const yaEnSalida = tools
+    .filter((t) => s.items.some((i) => i.herramienta_id === t.id || i.nombre === t.nombre))
+    .map((t) => t.id);
+  const nNuevos = Object.keys(nuevos).length;
+
   const footer = (
     <>
-      <button className="hr-btn" onClick={() => onImprimir(s)}><Printer size={16} /> Imprimir</button>
+      <button className="hr-btn" onClick={() => onVerPDF(s)}><Eye size={16} /> Ver PDF</button>
       {abierta && (
-        <button className="hr-btn primary" onClick={cerrar} disabled={guardando}>
+        <button className="hr-btn primary" onClick={cerrar} disabled={guardando || agregando}>
           {guardando ? "Guardando…" : "Registrar devolución"}
         </button>
       )}
@@ -430,6 +569,35 @@ function DetalleSalida({ id, onClose, onChanged, onImprimir }) {
           </tbody>
         </table>
       </div>
+
+      {/* Agregar más herramientas: solo mientras la salida sigue en obra */}
+      {abierta && !agregando && (
+        <div style={{ marginTop: 14 }}>
+          <button className="hr-btn" onClick={abrirAgregar}>
+            <Plus size={16} /> Agregar más herramientas
+          </button>
+        </div>
+      )}
+
+      {abierta && agregando && (
+        <div className="hr-add-panel">
+          <div className="hr-add-panel-title">Agregar más herramientas a esta salida</div>
+          <div className="hr-add-panel-help">
+            Marca las que se llevan además. Las que ya salieron no aparecen aquí.
+          </div>
+          <SelectorHerramientas
+            tools={tools} sel={nuevos} setSel={setNuevos}
+            recargar={recargarTools} excluir={yaEnSalida}
+          />
+          <div className="hr-add-panel-btns">
+            <button className="hr-btn" onClick={cancelarAgregar} disabled={guardandoNuevos}>Cancelar</button>
+            <button className="hr-btn primary" onClick={agregarALaSalida} disabled={guardandoNuevos || nNuevos === 0}>
+              <Plus size={16} />{" "}
+              {guardandoNuevos ? "Agregando…" : nNuevos ? `Agregar ${nNuevos} a la salida` : "Agregar a la salida"}
+            </button>
+          </div>
+        </div>
+      )}
 
       {abierta ? (
         <div className="hr-field" style={{ marginTop: 14 }}>

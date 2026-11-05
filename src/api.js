@@ -141,12 +141,13 @@ export const postCobro              = (ventaId, data) => apiFetch(`/api/ventas-c
 export const deleteCobro            = (cobroId)       => apiFetch(`/api/ventas-cobros/cobros/${cobroId}`, { method: 'DELETE' });
 // Herramientas
 export const getHerramientas   = ()         => apiFetch('/api/herramientas');
-export const postHerramienta   = (nombre)   => apiFetch('/api/herramientas', { method: 'POST', body: JSON.stringify({ nombre }) });
-export const deleteHerramienta = (id)       => apiFetch(`/api/herramientas/${id}`, { method: 'DELETE' });
+// export const postHerramienta   = (nombre)   => apiFetch('/api/herramientas', { method: 'POST', body: JSON.stringify({ nombre }) });
+export const postHerramienta = (data) => apiFetch('/api/herramientas', { method: 'POST', body: JSON.stringify(data) });export const deleteHerramienta = (id)       => apiFetch(`/api/herramientas/${id}`, { method: 'DELETE' });
 export const getSalidas        = (solo)     => apiFetch(`/api/herramientas/salidas${solo ? '?solo_faltantes=1' : ''}`);
 export const getSalida         = (id)       => apiFetch(`/api/herramientas/salidas/${id}`);
 export const postSalida        = (data)     => apiFetch('/api/herramientas/salidas', { method: 'POST', body: JSON.stringify(data) });
 export const postDevolucion    = (id, data) => apiFetch(`/api/herramientas/salidas/${id}/devolucion`, { method: 'POST', body: JSON.stringify(data) });
+export const postSalidaItems = (id, data) => /* igual que postDevolucion */ (`/salidas/${id}/items`, data);
 // getUsuarios, postUsuario, etc. Si ya tienes getUsuario(id), omite esa).
 
 export const getUsuario = (id) => request(`/usuarios/${id}`);

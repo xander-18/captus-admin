@@ -1811,3 +1811,31 @@ input[placeholder^="Escribe para buscar"]:focus {
   .hr-checklist { max-height: 38vh; }
   .hr-icon-btn { padding: 10px; }
 }
+/* =====================================================================
+   HERRAMIENTAS – extras (ojito "Ver PDF" + "Agregar más herramientas")
+   PEGAR AL FINAL del CSS.
+   ===================================================================== */
+
+/* Botón chico (el de "Ver PDF" en cada fila) */
+.hr-btn.small { padding: 5px 10px; font-size: 12px; }
+
+/* Panel "Agregar más herramientas a esta salida" */
+.hr-add-panel {
+  margin-top: 16px; padding: 14px;
+  border: 1px dashed #93c5fd; border-radius: 12px; background: #f8fbff;
+}
+.hr-add-panel-title { font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 2px; }
+.hr-add-panel-help { font-size: 12px; color: #6b7280; margin-bottom: 12px; }
+.hr-add-panel-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+
+/* "¿No la encuentras? Escribe su nombre…" */
+.hr-quick-label { font-size: 12px; color: #6b7280; margin-top: 14px; }
+.hr-quick { display: flex; gap: 8px; margin-top: 6px; }
+.hr-quick .hr-input { flex: 1; min-width: 0; }
+
+@media (max-width: 767px) {
+  .hr-table td .hr-btn.small { min-height: 40px; font-size: 13px; }
+  .hr-add-panel { padding: 12px; }
+  .hr-add-panel-btns .hr-btn { flex: 1; min-height: 46px; }
+  .hr-quick .hr-btn { min-height: 44px; }
+}
