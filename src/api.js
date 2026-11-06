@@ -153,6 +153,13 @@ export const postSalidaItems = (id, data) => /* igual que postDevolucion */ (`/s
 export const getUsuario = (id) => request(`/usuarios/${id}`);
 
 
+// Asignaciones
+export const getAsignaciones       = (f)         => apiFetch(`/api/asignaciones?${qsVC(f)}`);
+export const postAsignacion        = (data)      => apiFetch('/api/asignaciones', { method: 'POST', body: JSON.stringify(data) });
+export const putAsignacion         = (id, data)  => apiFetch(`/api/asignaciones/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+export const patchAsignacionEstado = (id, estado) => apiFetch(`/api/asignaciones/${id}/estado`, { method: 'PATCH', body: JSON.stringify({ estado }) });
+export const deleteAsignacion      = (id)        => apiFetch(`/api/asignaciones/${id}`, { method: 'DELETE' });
+
 // export const getUsuarioRoles = (userId) => request(`/usuarios/${userId}/roles`);
 
 export const asignarRol = (userId, rolId) =>

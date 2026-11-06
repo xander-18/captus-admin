@@ -20,7 +20,9 @@ import Usuarioroles from './pages/Seguridad/Usuarioroles';
 import Usuarios from './pages/Seguridad/Usuarios';
 
 import './index.css';
-import Herramientas from './pages/operaciones/Herramientas';
+import Herramientas from './pages/operaciones/Herramientas'; 
+import Asignaciones from './pages/Asignaciones';
+import PoliticaPrivacidad from './pages/PolticaPrivacidad';
 
 export default function App() {
   return (
@@ -29,6 +31,7 @@ export default function App() {
         <ToastProvider>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/politica-de-privacidad" element={<PoliticaPrivacidad />} />
             <Route
               path="/*"
               element={
@@ -43,6 +46,7 @@ export default function App() {
                       <Route path="/passwords" element={<Passwords />} />
                       <Route path="/ventas" element={<Ventas />} />
                       <Route path="/herramientas" element={<Herramientas />} />
+                      <Route path="/asignaciones" element={<Asignaciones />} />
 
 
                       {/* Seguridad */}

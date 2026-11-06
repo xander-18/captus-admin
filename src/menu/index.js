@@ -7,6 +7,7 @@ const clientes     = { to: '/clientes',     icon: Users,        label: 'Clientes
 const productos    = { to: '/productos',    icon: Package,      label: 'Productos' };
 const passwords    = { to: '/passwords',    icon: Lock,         label: 'Contraseñas' };
 const cotizaciones = { to: '/cotizaciones', icon: FileText,     label: 'Cotizaciones' };
+const asignaciones = { to: '/asignaciones', icon: FileText, label: 'Asignaciones' };
 // const herramientas = { to: '/herramientas', icon: FileText,     label: 'Herramientas' };
 const ventas = {to: '/ventas', icon: TrendingDown, label: 'Ventas'};
 
@@ -27,6 +28,7 @@ export default function getNavItems() {
   if (tiene('PRIV_MOD_CLIENTES'))     items.push(clientes);
   if (tiene('PRIV_MOD_PRODUCTOS'))    items.push(productos);
   // if (tiene('PRIV_MOD_VENTAS'))       items.push(ventas);
+  items.push(asignaciones);
   if (tiene('PRIV_MOD_PASSWORDS'))    items.push(passwords);
   if (tiene('PRIV_MOD_COTIZACIONES')) items.push(cotizaciones);
   if (tiene('PRIV_MOD_OPERACIONES'))  items.push(operaciones);
