@@ -12,55 +12,66 @@ const UNIDADES = ['unidad', 'metro', 'caja', 'paquete', 'rollo', 'kit', 'par'];
 const CATEGORIAS_SUGERIDAS = ['Cámaras', 'Sensores', 'Alarmas', 'Redes', 'Cableado', 'Eléctrico', 'Accesorios', 'Herramientas', 'Otros'];
 
 const PROD_POR_PAGINA = 10;
-const LIMITE_COMBO    = 8;
+const LIMITE_COMBO = 8;
 
+function useDebounce(value, delay = 300) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return debounced;
+}
 export default function Productos() {
   const toast = useToast();
   const { periodo, setPeriodo, rangoDesde, setRangoDesde, rangoHasta, setRangoHasta, calcRango, labelPeriodo } = useFechas();
 
-  const [productos, setProductos]     = useState([]);
+  const [productos, setProductos] = useState([]);
   const [movimientos, setMovimientos] = useState([]);
-  const [offline, setOffline]         = useState(false);
+  const [offline, setOffline] = useState(false);
 
+
+  const busquedaDebounced = useDebounce(busquedaProd, 300);
+  const comboQueryDebounced = useDebounce(mProductoQuery, 300);
   // Form: nuevo producto
-  const [pCodigo, setPCodigo]       = useState('');
-  const [pNombre, setPNombre]       = useState('');
-  const [pMarca, setPMarca]         = useState('');
-  const [pModelo, setPModelo]       = useState('');
+  const [pCodigo, setPCodigo] = useState('');
+  const [pNombre, setPNombre] = useState('');
+  const [pMarca, setPMarca] = useState('');
+  const [pModelo, setPModelo] = useState('');
   const [pCategoria, setPCategoria] = useState('');
-  const [pUnidad, setPUnidad]       = useState('unidad');
-  const [pStockMin, setPStockMin]   = useState('');
-  const [pPrecio, setPPrecio]       = useState('');
-  const [pErr, setPErr]             = useState('');
-  const [pLoading, setPLoading]     = useState(false);
+  const [pUnidad, setPUnidad] = useState('unidad');
+  const [pStockMin, setPStockMin] = useState('');
+  const [pPrecio, setPPrecio] = useState('');
+  const [pErr, setPErr] = useState('');
+  const [pLoading, setPLoading] = useState(false);
 
   // Modal: editar producto
-  const [editProd, setEditProd]         = useState(null);
-  const [ePCodigo, setEPCodigo]         = useState('');
-  const [ePNombre, setEPNombre]         = useState('');
-  const [ePMarca, setEPMarca]           = useState('');
-  const [ePModelo, setEPModelo]         = useState('');
-  const [ePCategoria, setEPCategoria]   = useState('');
-  const [ePUnidad, setEPUnidad]         = useState('unidad');
-  const [ePStockMin, setEPStockMin]     = useState('');
-  const [ePPrecio, setEPPrecio]         = useState('');
-  const [ePErr, setEPErr]               = useState('');
-  const [ePLoading, setEPLoading]       = useState(false);
+  const [editProd, setEditProd] = useState(null);
+  const [ePCodigo, setEPCodigo] = useState('');
+  const [ePNombre, setEPNombre] = useState('');
+  const [ePMarca, setEPMarca] = useState('');
+  const [ePModelo, setEPModelo] = useState('');
+  const [ePCategoria, setEPCategoria] = useState('');
+  const [ePUnidad, setEPUnidad] = useState('unidad');
+  const [ePStockMin, setEPStockMin] = useState('');
+  const [ePPrecio, setEPPrecio] = useState('');
+  const [ePErr, setEPErr] = useState('');
+  const [ePLoading, setEPLoading] = useState(false);
 
   // Catálogo: búsqueda + paginación
   const [busquedaProd, setBusquedaProd] = useState('');
-  const [paginaProd, setPaginaProd]     = useState(1);
+  const [paginaProd, setPaginaProd] = useState(1);
 
   // Form: nuevo movimiento
-  const [mProductoId, setMProductoId]       = useState('');
+  const [mProductoId, setMProductoId] = useState('');
   const [mProductoQuery, setMProductoQuery] = useState('');
-  const [mProductoOpen, setMProductoOpen]   = useState(false);
-  const [mTipo, setMTipo]             = useState('entrada');
-  const [mCantidad, setMCantidad]     = useState('');
-  const [mFecha, setMFecha]           = useState(fechaIso());
-  const [mMotivo, setMMotivo]         = useState('');
-  const [mErr, setMErr]               = useState('');
-  const [mLoading, setMLoading]       = useState(false);
+  const [mProductoOpen, setMProductoOpen] = useState(false);
+  const [mTipo, setMTipo] = useState('entrada');
+  const [mCantidad, setMCantidad] = useState('');
+  const [mFecha, setMFecha] = useState(fechaIso());
+  const [mMotivo, setMMotivo] = useState('');
+  const [mErr, setMErr] = useState('');
+  const [mLoading, setMLoading] = useState(false);
 
   const comboRef = useRef(null);
 
@@ -98,7 +109,8 @@ export default function Productos() {
   }, [editProd]);
 
   // Vuelve a la página 1 cada vez que cambia la búsqueda del catálogo
-  useEffect(() => { setPaginaProd(1); }, [busquedaProd]);
+  // useEffect(() => { setPaginaProd(1); }, [busquedaProd]);
+  useEffect(() => { setPaginaProd(1); }, [busquedaDebounced]);
 
   // Cierra el combo de producto al hacer click afuera
   useEffect(() => {
@@ -185,7 +197,7 @@ export default function Productos() {
   // ── Movimiento: crear / eliminar ──
   async function agregarMovimiento() {
     setMErr('');
-    if (!mProductoId)                          { setMErr('Elige un producto.'); return; }
+    if (!mProductoId) { setMErr('Elige un producto.'); return; }
     if (!mCantidad || parseFloat(mCantidad) <= 0) { setMErr('Ingresa una cantidad válida.'); return; }
 
     setMLoading(true);
@@ -221,14 +233,17 @@ export default function Productos() {
   }
 
   // KPIs
-  const totalProductos   = productos.length;
-  const stockBajo        = productos.filter(p => p.stock_actual <= p.stock_minimo);
-  const valorInventario  = productos.reduce((s, p) => s + p.stock_actual * p.precio, 0);
-  const entradasPeriodo  = movimientos.filter(m => m.tipo === 'entrada').reduce((s, m) => s + m.cantidad, 0);
-  const salidasPeriodo   = movimientos.filter(m => m.tipo === 'salida').reduce((s, m) => s + m.cantidad, 0);
+  const totalProductos = productos.length;
+  const stockBajo = productos.filter(p => p.stock_actual <= p.stock_minimo);
+  const valorInventario = productos.reduce((s, p) => s + p.stock_actual * p.precio, 0);
+  const entradasPeriodo = movimientos.filter(m => m.tipo === 'entrada').reduce((s, m) => s + m.cantidad, 0);
+  const salidasPeriodo = movimientos.filter(m => m.tipo === 'salida').reduce((s, m) => s + m.cantidad, 0);
 
   // Catálogo: filtrado + paginado
-  const qCatalogo = busquedaProd.trim().toLowerCase();
+  // const qCatalogo = busquedaProd.trim().toLowerCase();
+  const qCatalogo = busquedaDebounced.trim().toLowerCase();
+
+
   const productosFiltrados = !qCatalogo ? productos : productos.filter(p =>
     p.nombre.toLowerCase().includes(qCatalogo) ||
     (p.codigo || '').toLowerCase().includes(qCatalogo) ||
@@ -237,19 +252,20 @@ export default function Productos() {
   );
   const totalPaginasProd = Math.max(1, Math.ceil(productosFiltrados.length / PROD_POR_PAGINA));
   const paginaProdSegura = Math.min(paginaProd, totalPaginasProd);
-  const productosPagina  = productosFiltrados.slice(
+  const productosPagina = productosFiltrados.slice(
     (paginaProdSegura - 1) * PROD_POR_PAGINA,
     paginaProdSegura * PROD_POR_PAGINA
   );
 
   // Combo de producto (movimientos): filtrado y limitado
-  const qCombo = mProductoQuery.trim().toLowerCase();
+  // const qCombo = mProductoQuery.trim().toLowerCase();
+  const qCombo = mProductoId ? '' : comboQueryDebounced.trim().toLowerCase();
   const comboTodos = !qCombo ? productos : productos.filter(p =>
     p.nombre.toLowerCase().includes(qCombo) ||
     (p.codigo || '').toLowerCase().includes(qCombo) ||
     (p.marca || '').toLowerCase().includes(qCombo)
   );
-  const comboOpciones  = comboTodos.slice(0, LIMITE_COMBO);
+  const comboOpciones = comboTodos.slice(0, LIMITE_COMBO);
   const comboRestantes = comboTodos.length - comboOpciones.length;
 
   return (
@@ -380,7 +396,8 @@ export default function Productos() {
               />
             </div>
             <span className="badge">
-              {productosFiltrados.length}{busquedaProd ? ` de ${totalProductos}` : ''} producto{totalProductos !== 1 ? 's' : ''}
+              {/* {productosFiltrados.length}{busquedaProd ? ` de ${totalProductos}` : ''} producto{totalProductos !== 1 ? 's' : ''} */}
+              {productosFiltrados.length}{busquedaDebounced ? ` de ${totalProductos}` : ''} producto{totalProductos !== 1 ? 's' : ''}
             </span>
           </div>
         </div>
@@ -394,7 +411,8 @@ export default function Productos() {
           ) : !productosPagina.length ? (
             <div className="empty">
               <i className="ti ti-search-off"></i>
-              <p>Sin resultados para "{busquedaProd}"</p>
+              {/* <p>Sin resultados para "{busquedaProd}"</p> */}
+              <p>Sin resultados para "{busquedaDebounced}"</p>
               <small>Prueba con otro término de búsqueda</small>
             </div>
           ) : (
