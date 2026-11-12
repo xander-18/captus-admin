@@ -4,7 +4,7 @@ import {
   getAsignaciones, postAsignacion, putAsignacion, patchAsignacionEstado, deleteAsignacion, getUsuarios,
 } from '../api';
 import AsignacionModal, {
-  ESTADOS, hoyISO, enDias, finDe, rangoTexto, estadoPlan, nombreDe, iniciales,
+  ESTADOS, hoyISO, enDias, finDe, rangoTexto, estadoPlan, nombreDe, iniciales, colorPersona, estadoDe,
 } from '../components/AsignacionModal';
 
 export default function Asignaciones() {
@@ -141,24 +141,46 @@ export default function Asignaciones() {
                 {visibles.map((a) => {
                   const plan = estadoPlan(a, hoy);
                   const personas = personasDe(a);
+                  const est = estadoDe(a.estado);
                   return (
                     <tr key={a.id} className="tk-row" onClick={() => setModal(a)}>
-                      <td className="td-cliente">{a.nombre}</td>
-                      <td>
-                        <span className="tk-avatars">
-                          {personas.map((u) => (
-                            <span key={u.id} className="tk-avatar" title={nombreDe(u)}>{iniciales(nombreDe(u))}</span>
-                          ))}
-                        </span>{' '}
-                        {personas.length
-                          ? personas.map((u) => nombreDe(u)).join(', ')
-                          : <small className="tk-when-txt">Sin asignar</small>}
+                      {/* Servicio + descripción debajo */}
+                      <td className="td-cliente">
+                        {a.nombre}
+                        {a.descripcion && <span className="tk-row-desc">{a.descripcion}</span>}
                       </td>
+
+                      {/* Personas: cada una con su propio color */}
+                      <td>
+                        {personas.length ? (
+                          <div className="tk-people-tags">
+                            {personas.map((u) => {
+                              const c = colorPersona(u.id);
+                              return (
+                                <span key={u.id} className="tk-person-tag" style={{ background: c.bg, color: c.fg }}>
+                                  <span className="tk-person-tag-ini" style={{ background: c.fg }}>{iniciales(nombreDe(u))}</span>
+                                  {nombreDe(u)}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <small className="tk-when-txt">Sin asignar</small>
+                        )}
+                      </td>
+
+                      {/* Estado: el selector toma el color del estado */}
                       <td onClick={(e) => e.stopPropagation()}>
-                        <select className="tk-select" value={a.estado} onChange={(e) => cambiarEstado(a, e.target.value)}>
+                        <select
+                          className="tk-select tk-estado-select"
+                          style={{ background: est.bg, color: est.fg, borderColor: est.color }}
+                          value={a.estado}
+                          onChange={(e) => cambiarEstado(a, e.target.value)}
+                        >
                           {ESTADOS.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
                         </select>
                       </td>
+
                       <td>
                         <div className="tk-sched">{rangoTexto(a)}</div>
                         <small className={`tk-when-txt ${plan.tipo}`}>{plan.texto}</small>
