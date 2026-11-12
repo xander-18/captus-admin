@@ -160,6 +160,18 @@ export const putAsignacion         = (id, data)  => apiFetch(`/api/asignaciones/
 export const patchAsignacionEstado = (id, estado) => apiFetch(`/api/asignaciones/${id}/estado`, { method: 'PATCH', body: JSON.stringify({ estado }) });
 export const deleteAsignacion      = (id)        => apiFetch(`/api/asignaciones/${id}`, { method: 'DELETE' });
 
+
+// Catálogo
+export const getCatalogo = () => apiFetch('/api/catalogo');
+export const putCatalogoProducto = (tipo, id, data) =>
+  apiFetch(`/api/catalogo/productos/${tipo}/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(data) });
+export const deleteCatalogoProducto = (tipo, id) =>
+  apiFetch(`/api/catalogo/productos/${tipo}/${encodeURIComponent(id)}`, { method: 'DELETE' });
+export const putCatalogoKit = (id, data) =>
+  apiFetch(`/api/catalogo/kits/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(data) });
+export const deleteCatalogoKit = (id) =>
+  apiFetch(`/api/catalogo/kits/${encodeURIComponent(id)}`, { method: 'DELETE' });
+
 // export const getUsuarioRoles = (userId) => request(`/usuarios/${userId}/roles`);
 
 export const asignarRol = (userId, rolId) =>

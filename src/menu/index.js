@@ -8,6 +8,7 @@ const productos    = { to: '/productos',    icon: Package,      label: 'Producto
 const passwords    = { to: '/passwords',    icon: Lock,         label: 'Contraseñas' };
 const cotizaciones = { to: '/cotizaciones', icon: FileText,     label: 'Cotizaciones' };
 const asignaciones = { to: '/asignaciones', icon: FileText, label: 'Asignaciones' };
+const catalogo      = { to: '/catalogo',     icon: FileText,     label: 'Catálogo' };
 // const herramientas = { to: '/herramientas', icon: FileText,     label: 'Herramientas' };
 const ventas = {to: '/ventas', icon: TrendingDown, label: 'Ventas'};
 
@@ -22,6 +23,7 @@ export default function getNavItems() {
   const tiene = (code) => privilegios.some((item) => item.code === code);
   const items = [];
   items.push(ventas);
+  items.push(catalogo);
   // items.push(herramientas);
 
   if (tiene('PRIV_MOD_EGRESOS'))      items.push(egresos);

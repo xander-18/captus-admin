@@ -1,18 +1,71 @@
 import { useState } from 'react';
 import { Check, Trash2, X } from 'lucide-react';
 /* ── Constantes y utilidades compartidas con pages/operaciones/Asignaciones.jsx ── */
+
+/* ESTADOS: cada estado tiene su propio color.
+   color = punto / borde · bg = fondo suave · fg = texto sobre ese fondo */
 export const ESTADOS = [
-  { id: 'pendiente',   label: 'Pendiente',   color: '#9ca3af' },
-  { id: 'en_proceso',  label: 'En proceso',  color: '#1a56db' },
-  { id: 'en_revision', label: 'En revisión', color: '#d97706' },
-  { id: 'completada',  label: 'Completada',  color: '#059669' },
+  { id: 'pendiente',   label: 'Pendiente',   color: '#6b7280', bg: '#f3f4f6', fg: '#4b5563' },
+  { id: 'en_proceso',  label: 'En proceso',  color: '#1a56db', bg: '#dbeafe', fg: '#1e40af' },
+  { id: 'en_revision', label: 'En revisión', color: '#d97706', bg: '#fef3c7', fg: '#92400e' },
+  { id: 'completada',  label: 'Completada',  color: '#059669', bg: '#d1fae5', fg: '#065f46' },
 ];
+
+export const estadoDe = (id) => ESTADOS.find((s) => s.id === id) || ESTADOS[0];
+
+/* Colores por persona: la misma persona siempre tiene el mismo color,
+   en el modal, en las tarjetas y en la lista. */
+const PALETA_PERSONAS = [
+  { bg: '#dbeafe', fg: '#1e40af' }, // azul
+  { bg: '#fce7f3', fg: '#9d174d' }, // rosa
+  { bg: '#d1fae5', fg: '#065f46' }, // verde
+  { bg: '#fef3c7', fg: '#92400e' }, // ámbar
+  { bg: '#ede9fe', fg: '#5b21b6' }, // violeta
+  { bg: '#cffafe', fg: '#155e75' }, // cian
+  { bg: '#ffedd5', fg: '#9a3412' }, // naranja
+  { bg: '#ecfccb', fg: '#3f6212' }, // lima
+];
+
+export const colorPersona = (id) => {
+  const s = String(id ?? '');
+  const n = Number(s);
+  const h = Number.isInteger(n)
+    ? Math.abs(n)
+    : [...s].reduce((acc, ch) => acc * 31 + ch.charCodeAt(0), 7);
+  return PALETA_PERSONAS[Math.abs(h) % PALETA_PERSONAS.length];
+};
 
 // El usuario puede tener el nombre en distintos campos según tu tabla
 export const nombreDe = (u) => u?.nombre || u?.name || u?.username || u?.email || (u ? `Usuario ${u.id}` : '');
 
 export const iniciales = (nombre = '') =>
   nombre.split(' ').filter(Boolean).slice(0, 2).map((p) => p[0].toUpperCase()).join('');
+
+/* Avatar con el color de la persona. Úsalo en modal, tarjetas y lista.
+   <Avatar usuario={u} />  ·  <Avatar usuario={u} small /> */
+export function Avatar({ usuario, small = false }) {
+  const c = colorPersona(usuario?.id);
+  return (
+    <span
+      className={`tk-avatar${small ? ' sm' : ''}`}
+      style={{ background: c.bg, color: c.fg }}
+      title={nombreDe(usuario)}
+    >
+      {iniciales(nombreDe(usuario))}
+    </span>
+  );
+}
+
+/* Etiqueta de estado con su color. <EstadoBadge estado={a.estado} /> */
+export function EstadoBadge({ estado }) {
+  const e = estadoDe(estado);
+  return (
+    <span className="tk-estado-badge" style={{ background: e.bg, color: e.fg }}>
+      <span className="tk-dot" style={{ background: e.color }} />
+      {e.label}
+    </span>
+  );
+}
 
 /* ── Fechas (AAAA-MM-DD, hora local) ──
    fecha_fin vacía = servicio de un solo día (termina el mismo día que empieza). */
@@ -115,7 +168,7 @@ export default function AsignacionModal({ asignacion, usuarios = [], onSave, onD
             <textarea rows={3} value={f.descripcion} onChange={(e) => set('descripcion', e.target.value)} placeholder="Dirección, materiales, detalles… (opcional)" />
           </div>
 
-                   <div className="modal-field tk-full">
+          <div className="modal-field tk-full">
             <label>
               Personas asignadas
               {f.user_ids.length > 0 && (
@@ -131,17 +184,24 @@ export default function AsignacionModal({ asignacion, usuarios = [], onSave, onD
                 {usuarios.map((u) => {
                   const sid = String(u.id);
                   const activo = f.user_ids.includes(sid);
+                  const c = colorPersona(u.id);
                   return (
                     <button
                       key={u.id}
                       type="button"
                       className={`tk-person${activo ? ' tk-person-on' : ''}`}
+                      style={activo ? { background: c.bg, borderColor: c.fg } : undefined}
                       onClick={() => toggleUsuario(u.id)}
                       aria-pressed={activo}
                     >
-                      <span className="tk-avatar">{iniciales(nombreDe(u))}</span>
+                      <Avatar usuario={u} />
                       <span className="tk-person-nombre">{nombreDe(u)}</span>
-                      <span className="tk-check">{activo && <Check size={13} strokeWidth={3} />}</span>
+                      <span
+                        className="tk-check"
+                        style={activo ? { background: c.fg, borderColor: c.fg } : undefined}
+                      >
+                        {activo && <Check size={13} strokeWidth={3} />}
+                      </span>
                     </button>
                   );
                 })}
@@ -160,9 +220,24 @@ export default function AsignacionModal({ asignacion, usuarios = [], onSave, onD
 
           <div className="modal-field tk-full">
             <label>Estado</label>
-            <select value={f.estado} onChange={(e) => set('estado', e.target.value)}>
-              {ESTADOS.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
-            </select>
+            <div className="tk-estado-chips">
+              {ESTADOS.map((s) => {
+                const activo = f.estado === s.id;
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    className={`tk-estado-chip${activo ? ' active' : ''}`}
+                    style={activo ? { background: s.bg, color: s.fg, borderColor: s.color } : undefined}
+                    onClick={() => set('estado', s.id)}
+                    aria-pressed={activo}
+                  >
+                    <span className="tk-dot" style={{ background: s.color }} />
+                    {s.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <div className="modal-field tk-full">
