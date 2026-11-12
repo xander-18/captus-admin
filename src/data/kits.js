@@ -854,7 +854,7 @@ export const CATALOGO = {
     { id: "galv16", name: "KILO ALAMBRE GALVANIZADO 16mm", costo: 12.29, precio: 23.0, marca: "Cerco eléctrico" },
     { id: "acerado", name: "ALAMBRE ACERADO 2.5mm", costo: 12.46, precio: 23.5, marca: "Cerco eléctrico" },
     { id: "letrero", name: "LETRERO DE ADVERTENCIA ESTANDAR", costo: 3.09, precio: 6.0, marca: "Cerco eléctrico" },
-
+{ id: "bujia-rollo", name: "CABLE BUJIA POR ROLLO 50M", costo: 122.0, precio: 178.58, marca: "Cerco eléctrico" },
     // --- Servicios ---
     // { id: "transporte", name: "TRANSPORTE (servicio)", costo: 20.0, precio: 30.0, marca: "Servicios" },
     {
@@ -1307,10 +1307,10 @@ export const KITS = [
     id: "cerco-10",
     name: "Kit Cerco Eléctrico 10 m (Yanex 1600)",
     categoria: "Cerco eléctrico",
-    nota: "1kg de alambre acerado equivale a 3.5m x 4 líneas en los postes del cerco. " +
-      "La mano de obra depende exclusivamente del uso de soldadura o concreto (cotizar con el ítem 'MANO DE OBRA (servicio)'). " +
-      "El cable bujía se cotiza x 3 líneas, dependiendo también de la ubicación del panel, que no debe exceder los 10m de distancia del cerco. " +
-      "El panel YANEX es IP65, apto para exteriores.",
+    // nota: "1kg de alambre acerado equivale a 3.5m x 4 líneas en los postes del cerco. " +
+    //   "La mano de obra depende exclusivamente del uso de soldadura o concreto (cotizar con el ítem 'MANO DE OBRA (servicio)'). " +
+    //   "El cable bujía se cotiza x 3 líneas, dependiendo también de la ubicación del panel, que no debe exceder los 10m de distancia del cerco. " +
+    //   "El panel YANEX es IP65, apto para exteriores.",
     items: {
       equipos: [{ pid: "hg-yanex", qty: 1 }],
       accesorios: [
@@ -1322,6 +1322,24 @@ export const KITS = [
     },
     opcionales: { equipos: [], accesorios: [{ pid: "bujia", qty: 5 }] },
   },
+
+{
+  id: "cerco-zoe",
+  name: "Kit Cerco Eléctrico 30 m (Zoe Hagroy)",
+  categoria: "Cerco eléctrico",
+  items: {
+    equipos: [{ pid: "hg-zoe", qty: 1 }],
+    accesorios: [
+      { pid: "ais-t", qty: 72 }, { pid: "ais-i", qty: 6 },
+      { pid: "aro-s", qty: 72 }, { pid: "aro-d", qty: 6 },
+      { pid: "abraz", qty: 15 }, { pid: "galv16", qty: 8 },
+      { pid: "acerado", qty: 5 }, { pid: "letrero", qty: 5 },
+      { pid: "bujia-rollo", qty: 2 },
+    ],
+  },
+  opcionales: { equipos: [], accesorios: [] },
+},
+
 ];
 
 const ADIC_CACI = [
