@@ -667,14 +667,24 @@ export const CATALOGO = {
     // --- HAGROY ---
     { id: "hg-mpr3", name: "HAGROY MPR3", costo: 144.55, precio: 202.98, marca: "HAGROY" },
     { id: "hg-alcom", name: "PANEL HAGROY ALCOM MAX 4G", costo: 937.51, precio: 1336.54, marca: "HAGROY" },
+    
     {
       id: "hg-yanex", name: "KIT CERCO ELECTRICO YANEX 1600 HAGROY", costo: 244.26, precio: 430.0, marca: "HAGROY",
       nota: "Incluye electrificador, sirena 30w, batería 4A, pulsador y letrero",
       incluye: [
-        [1, "Electrificador YANEX 1600"], [1, "Sirena 30W"], [1, "Batería 4A"],
+        [1, "Electrificador YANEX 1600"], [1, "Sirena 30W"], [1, "Batería 12V 4AMP"],
         [1, "Pulsador"], [1, "Letrero de advertencia"],
       ]
     },
+
+    {
+  id: "hg-zoe", name: "KIT CERCO ELECTRICO 30 M (ZOE HAGROY)", costo: 0, precio: 593.90, marca: "HAGROY", // TODO: poner el costo real
+  nota: "Incluye electrificador, sirena 30w, batería 4A, pulsador y letrero",
+  incluye: [
+    [1, "Electrificador ZOE HAGROY"], [1, "Sirena 30W"], [1, "Batería 12V 4AMP"],
+    [1, "Pulsador"], [1, "Letrero de advertencia"],
+  ]
+},
 
     // --- IPVOZ (NUEVO) ---
     {
