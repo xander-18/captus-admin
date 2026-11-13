@@ -22,6 +22,7 @@ import Usuarios from './pages/Seguridad/Usuarios';
 import './index.css';
 import Herramientas from './pages/operaciones/Herramientas'; 
 import Asignaciones from './pages/Asignaciones';
+import Catalogo from './pages/Catalogo';
 import PoliticaPrivacidad from './pages/PolticaPrivacidad';
 
 export default function App() {
@@ -47,6 +48,7 @@ export default function App() {
                       <Route path="/ventas" element={<Ventas />} />
                       <Route path="/herramientas" element={<Herramientas />} />
                       <Route path="/asignaciones" element={<Asignaciones />} />
+                      <Route path="/catalogo" element={<Catalogo />} />
 
 
                       {/* Seguridad */}
