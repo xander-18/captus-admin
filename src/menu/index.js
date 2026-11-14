@@ -24,6 +24,7 @@ export default function getNavItems() {
   const items = [];
   items.push(ventas);
   items.push(catalogo);
+  items.push(clientes);
   // items.push(herramientas);
 
   if (tiene('PRIV_MOD_EGRESOS'))      items.push(egresos);
