@@ -2082,3 +2082,677 @@ input[placeholder^="Escribe para buscar"]:focus {
   color: #6b7280;
   font-size: 0.8rem;
 }
+
+/* =====================================================================
+   ASIGNACIONES · colores por persona / estado + descripción
+   PEGAR AL FINAL del CSS (después del bloque de Tareas).
+   Los colores de avatar y estado se aplican desde el JSX (estilo inline),
+   así que aquí solo va la forma.
+   ===================================================================== */
+
+/* ---------- Estado: selector del modal (chips con color) ---------- */
+.tk-estado-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.tk-estado-chip {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 7px 14px; border: 1.5px solid #e5e7eb; border-radius: 20px;
+  background: #fff; font-size: 13px; font-weight: 500; color: #6b7280;
+  cursor: pointer; font-family: inherit; transition: all .15s;
+}
+.tk-estado-chip:hover { border-color: #9ca3af; }
+.tk-estado-chip.active { font-weight: 600; }
+
+/* ---------- Estado: etiqueta para tarjetas y lista ---------- */
+.tk-estado-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 10px; border-radius: 20px;
+  font-size: 12px; font-weight: 600; white-space: nowrap;
+}
+
+/* ---------- Descripción debajo del servicio ---------- */
+/* Tarjeta: máximo 2 líneas, el resto se corta con "…" */
+.tk-card-desc {
+  font-size: 12px; line-height: 1.4; color: #6b7280;
+  overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+/* Lista / tabla: debajo del nombre, hasta 2 líneas */
+.tk-row-desc {
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  margin-top: 3px; max-width: 420px;
+  font-size: 12px; font-weight: 400; line-height: 1.4; color: #6b7280;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Personas: etiqueta con el color de cada una ---------- */
+.tk-people-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tk-person-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 10px 3px 4px; border-radius: 20px;
+  font-size: 12px; font-weight: 600; white-space: nowrap;
+}
+.tk-person-tag-ini {
+  width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 700; color: #fff;
+}
+
+/* ---------- Estado: select de la tabla con su color ---------- */
+.tk-estado-select { font-weight: 600; cursor: pointer; border-width: 1.5px; }
+
+/* ---------- Avatares: un poco más de contraste ---------- */
+.tk-avatar { border: 2px solid #fff; }
+.tk-avatar.sm { border: none; }
+
+@media (max-width: 767px) {
+  .tk-estado-chip { min-height: 40px; }
+  .tk-row-desc { white-space: normal; max-width: none; }
+}
+
+/* Estado "Anulada" */
+.status-anulada { background: var(--danger-bg); color: var(--danger-text); border: 1px solid var(--danger-border); }
+
+/* Select de estado en la lista: se ve como la píldora, pero se puede cambiar */
+.status-select {
+  appearance: none;
+  -webkit-appearance: none;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 4px 24px 4px 10px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%2364748b' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 10px 6px;
+}
+.status-select:focus { outline: none; box-shadow: 0 0 0 3px var(--primary-light); }
+.status-select:disabled { opacity: .6; cursor: not-allowed; }
+.status-select option { background: #fff; color: #0f172a; font-weight: 500; text-transform: none; letter-spacing: 0; }
+/* =====================================================================
+   RESUMEN FINANCIERO – acabado profesional (solo visual)
+   PEGAR AL FINAL del CSS. No cambia estructura, lógica ni JSX.
+   Usa las variables que ya existen en .app-root.
+   ===================================================================== */
+
+.app-root .summary-panel {
+  gap: 0;
+  padding: 24px 22px;
+  font-variant-numeric: tabular-nums; /* los montos quedan alineados dígito a dígito */
+}
+
+/* ---------- Título ---------- */
+.app-root .summary-title {
+  margin: 0 0 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-light);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  color: var(--text-main);
+}
+.app-root .summary-title + .separator { display: none; }
+
+/* ---------- Separadores: pasan a ser solo espacio entre secciones ---------- */
+.app-root .summary-panel .separator { height: 0; margin: 6px 0; background: none; }
+.app-root .summary-panel .separator.spaced-sm { margin: 12px 0; }
+/* las dos rayas vacías del final del panel */
+.app-root .summary-panel > .separator:last-child,
+.app-root .summary-panel > .separator:nth-last-child(2) { display: none; }
+
+/* ---------- Encabezado de sección (Costos / Coste de venta) ---------- */
+.app-root .summary-panel .block-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 4px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-light);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-main);
+}
+/* Mismo código de color que la tabla de ítems: ámbar = compra, azul = venta */
+.app-root .summary-panel .block-label::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: #f59e0b;
+}
+.app-root .summary-panel .summary-line.total + .separator + .block-label::before {
+  background: #3b82f6;
+}
+
+/* ---------- Líneas ---------- */
+.app-root .summary-panel .summary-line {
+  padding: 7px 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.app-root .summary-panel .summary-line span:last-child {
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+/* ---------- Totales (Costo total) ---------- */
+.app-root .summary-panel .summary-line.total {
+  margin-top: 8px;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--border-dark);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+.app-root .summary-panel .summary-line.total span:last-child {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* ---------- IGV ---------- */
+.app-root .summary-panel .extra-cost-toggle {
+  margin: 2px 0 4px;
+  padding: 8px 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-main);
+}
+
+/* ---------- Venta total: lo único que se destaca ---------- */
+.app-root .summary-panel .summary-line.total.primary {
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 14px 0 0;
+  padding: 16px 18px;
+  border: none;
+  border-radius: var(--radius-lg);
+  background: var(--primary);
+  color: #fff;
+  font-size: 14px;
+}
+.app-root .summary-panel .summary-line.total.primary span:last-child {
+  color: #fff;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* ---------- Margen de ganancia: verde o rojo según el valor ---------- */
+.app-root .summary-panel .summary-line.total:not(.primary):has(.c-ok),
+.app-root .summary-panel .summary-line.total:not(.primary):has(.c-danger) {
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 12px;
+  padding: 12px 16px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+}
+.app-root .summary-panel .summary-line.total:not(.primary):has(.c-ok) {
+  background: var(--success-bg);
+  border-color: var(--success-border);
+}
+.app-root .summary-panel .summary-line.total:not(.primary):has(.c-danger) {
+  background: var(--danger-bg);
+  border-color: var(--danger-border);
+}
+
+/* Corrección: antes `.summary-line span:last-child` pisaba c-ok / c-danger y el
+   margen siempre salía en negro. Va DESPUÉS de la regla de color de las líneas. */
+.app-root .summary-panel .summary-line span.c-ok     { color: var(--success-text); }
+.app-root .summary-panel .summary-line span.c-danger { color: var(--danger-text); }
+
+/* ---------- Móvil ---------- */
+@media (max-width: 767px) {
+  .app-root .summary-panel {
+    padding: 18px 16px calc(24px + env(safe-area-inset-bottom, 0px));
+  }
+  .app-root .summary-panel .summary-line.total.primary span:last-child { font-size: 22px; }
+}
+
+.app-root .editor .card-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-main);
+}
+
+/* Monto de cada sección (S/ 50.00, S/ 180.00…) */
+.app-root .editor .card-amount {
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--primary);
+}
+.app-root .editor .card-sub {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Etiquetas de campo: un tono más firme que el gris claro */
+.app-root .editor .field label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+}
+
+/* Campos: placeholder discreto, borde que reacciona al pasar el mouse */
+.app-root .editor .field input::placeholder,
+.app-root .editor .card textarea::placeholder {
+  color: var(--text-light);
+  opacity: 1;
+}
+.app-root .editor .field input:hover:not(:focus):not([readonly]),
+.app-root .editor .labor-input:hover:not(:focus),
+.app-root .editor .card textarea:hover:not(:focus) {
+  border-color: var(--text-light);
+}
+
+/* N° de cotización (solo lectura): se ve como dato, no como campo editable */
+.app-root .editor .field input[readonly] {
+  background: var(--bg-surface-alt);
+  color: var(--text-muted);
+  font-weight: 600;
+  cursor: default;
+}
+.app-root .editor .field input[readonly]:focus {
+  border-color: var(--border-dark);
+  box-shadow: none;
+}
+
+/* Nota (textarea): borde de foco igual que el resto de campos.
+   El borde base viene inline en el JSX, por eso el !important. */
+.app-root .editor .card textarea {
+  line-height: 1.5;
+  color: var(--text-main);
+}
+.app-root .editor .card textarea:focus {
+  outline: none;
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+/* Subsecciones de Instalación (Transporte, Certificado, Servicios, Descuentos).
+   En el JSX unas están en minúscula y otras en MAYÚSCULA: aquí todas quedan
+   en "Frase normal" sin tocar el JSX. */
+.app-root .editor .extra-cost-name {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+  text-transform: lowercase;
+}
+.app-root .editor .extra-cost-name::first-letter {
+  text-transform: uppercase;
+}
+
+/* "¿Se requiere…?" / "Incluir garantía…": legibles, no perdidos */
+.app-root .editor .extra-cost-toggle {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-main);
+}
+
+/* Etiquetas de estado vacío: más discretas que el monto aprobado */
+.app-root .editor .not-required-tag {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  padding: 3px 8px;
+  background: transparent;
+  color: var(--text-muted);
+  border-color: var(--border-light);
+}
+
+/* Botones "Ocultar columnas" / "Ordenar": discretos, tipo pastilla */
+.app-root .editor .btn-toggle-cols {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-pill);
+  box-shadow: none;
+}
+.app-root .editor .btn-toggle-cols:hover {
+  color: var(--text-main);
+  background: var(--bg-surface-alt);
+  border-color: var(--border-dark);
+}
+/* Activo (modo Ordenar): vuelve a ser protagonista */
+.app-root .editor .btn-toggle-cols.is-active,
+.app-root .editor .btn-toggle-cols.is-active:hover {
+  color: #fff;
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+/* Instalación: "Monto total | Desglosar por ítems" como control segmentado.
+   (El div que los contiene lleva estilos inline; por eso el !important.) */
+.app-root .editor .card > div[style*="gap: 6px"] {
+  display: inline-flex !important;
+  gap: 2px !important;
+  padding: 3px;
+  width: fit-content;
+  background: var(--bg-surface-alt);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+}
+.app-root .editor .card > div[style*="gap: 6px"] .btn-toggle-cols {
+  padding: 5px 14px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+}
+.app-root .editor .card > div[style*="gap: 6px"] .btn-toggle-cols:hover {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-main);
+}
+.app-root .editor .card > div[style*="gap: 6px"] .btn-toggle-cols.is-active,
+.app-root .editor .card > div[style*="gap: 6px"] .btn-toggle-cols.is-active:hover {
+  background: var(--bg-surface);
+  color: var(--primary);
+  font-weight: 600;
+  border-color: var(--border-light);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Tabla de ítems: contenedor con borde y esquinas, filas con línea sólida suave */
+.app-root .editor .items-scroll {
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+}
+.app-root .editor .items-table {
+  margin-bottom: 0;
+}
+.app-root .editor .items-table td {
+  border-bottom: 1px solid var(--border-light);
+}
+.app-root .editor .items-table tr:last-child td {
+  border-bottom: none;
+}
+/* Al pasar el mouse, las columnas fijas (CANT y nombre) acompañan a la fila */
+.app-root .editor .items-table tbody tr:hover > td.sticky-0,
+.app-root .editor .items-table tbody tr:hover > td.sticky-1,
+.app-root .editor .items-table tbody tr:hover > td.sticky-2 {
+  background: var(--bg-surface-alt);
+}
+
+/* Sin ítems: caja de invitación en vez de texto suelto */
+.app-root .editor .items-empty {
+  padding: 18px 16px;
+  text-align: center;
+  background: var(--bg-surface-alt);
+  border: 1px dashed var(--border-dark);
+  border-radius: var(--radius-md);
+}
+
+/* Botones de agregar: la acción principal se distingue de las secundarias */
+.app-root .editor .add-btn {
+  margin-top: 0;
+  padding: 7px 14px;
+  font-size: 12.5px;
+  border-radius: var(--radius-md);
+}
+.app-root .editor .add-btn:not(.secondary) {
+  color: var(--primary);
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+}
+.app-root .editor .add-btn:not(.secondary):hover {
+  background: var(--primary-light);
+  border-color: var(--primary);
+}
+/* Dentro de Instalación (servicios, descuentos, ítems): sin margen extra */
+.app-root .editor .extra-cost-block .add-btn {
+  margin-top: 0;
+}
+
+
+/* ---------------------------------------------------------------------
+   B. ESPACIADO Y MEDIDAS  (tablet y escritorio, ≥ 768px)
+   En celular se respetan los tamaños táctiles que ya tenías.
+   --------------------------------------------------------------------- */
+@media (min-width: 768px) {
+
+  /* Ritmo general: tarjetas más juntas y parejas */
+  .app-root .editor {
+    padding: 20px 24px;
+    gap: 16px;
+  }
+  .app-root .editor .card {
+    padding: 18px 20px;
+    border-radius: 10px;
+  }
+
+  /* Cabecera de cada tarjeta: una banda con línea divisoria debajo.
+     Cubre "Datos del cliente", "Equipos", "Instalación" y "Nota y garantía". */
+  .app-root .editor .card-header,
+  .app-root .editor .card-title-block {
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-light);
+  }
+  .app-root .editor .card-title-block {
+    display: block;
+  }
+
+  /* Campos del cliente: todos de la misma altura */
+  .app-root .editor .field input,
+  .app-root .editor .labor-input,
+  .app-root .editor .extra-cost-toggle + input[type="text"] {
+    height: 36px;
+  }
+  .app-root .editor .field-row {
+    margin-bottom: 0;
+  }
+  .app-root .editor .field-row + .field-row {
+    margin-top: 12px;
+  }
+  /* Botón "Buscar" a la altura del campo DNI / RUC */
+  .app-root .editor .field > div[style*="display: flex"] > .btn {
+    height: 36px;
+    padding: 0 14px;
+  }
+
+  /* Pastillas "Ocultar columnas" y "Ordenar": compactas */
+  .app-root .editor .btn-toggle-cols {
+    height: 26px;
+    padding: 0 10px;
+  }
+  .app-root .editor .card > div[style*="gap: 6px"] .btn-toggle-cols {
+    height: 28px;
+    padding: 0 14px;
+  }
+
+  /* Instalación: separadores más cortos y botones a la altura del campo */
+  .app-root .editor .separator.spaced {
+    margin: 14px 0;
+  }
+  .app-root .editor .extra-cost-block {
+    gap: 8px;
+  }
+  .app-root .editor .labor-row {
+    gap: 10px;
+  }
+  .app-root .editor .labor-input-wrap input {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .app-root .editor .labor-input-wrap span {
+    top: 8px;
+  }
+  .app-root .editor .labor-row .btn {
+    height: 36px;
+  }
+
+  /* Pie con botones de agregar */
+  .app-root .editor .items-footer {
+    margin-top: 12px;
+    gap: 8px;
+  }
+}
+
+
+/* ---------------------------------------------------------------------
+   C. PROPORCIÓN DE "DATOS DEL CLIENTE"  (laptops y escritorio, ≥ 1024px)
+   En la segunda fila el N° de cotización es corto, el DNI/RUC (con su
+   botón Buscar) un poco más largo, y Atención / Dirección el resto.
+   --------------------------------------------------------------------- */
+@media (min-width: 1024px) {
+  .app-root .editor .field-row + .field-row > .field:nth-child(1) { flex: 0.7 1 0; }
+  .app-root .editor .field-row + .field-row > .field:nth-child(2) { flex: 1.3 1 0; }
+}
+.app-root .list-table td.c-ok     { color: var(--success-text); }
+.app-root .list-table td.c-danger { color: var(--danger-text); }
+
+/* Montos y porcentajes: dígitos alineados */
+.app-root .list-table .cell-strong,
+.app-root .list-table .cell-margin {
+  font-variant-numeric: tabular-nums;
+}
+.app-root .list-table .cell-strong { font-weight: 600; }
+
+/* Título de la barra de herramientas de la lista: más discreto, para que
+   el protagonista sea el título de la página */
+.app-root .list-title {
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+/* Encabezados de columna */
+.app-root .list-table th {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  z-index: 1;
+}
+
+/* Cliente y proyecto */
+.app-root .list-table .client-name {
+  line-height: 1.35;
+  margin-bottom: 2px;
+}
+.app-root .list-table .project-name {
+  line-height: 1.4;
+}
+
+/* Fila: el cursor y el color de fondo ya existen; solo se suaviza el cambio */
+.app-root .list-table tbody tr td {
+  transition: background-color 0.12s ease;
+}
+
+/* Selector de estado: reacciona al pasar el mouse sin cambiar de color */
+.app-root .status-select:hover:not(:disabled) {
+  box-shadow: 0 0 0 3px var(--border-light);
+}
+.app-root .status-select:focus {
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+/* Botones de acción (ojo y duplicar): discretos, sin sombra */
+.app-root .list-table td:last-child .btn {
+  color: var(--text-muted);
+  box-shadow: none;
+  background: var(--bg-surface);
+}
+.app-root .list-table td:last-child .btn:hover:not(:disabled) {
+  color: var(--primary);
+  border-color: var(--primary);
+  background: #eef2ff;
+}
+
+/* Botón principal ("Nueva cotización", "Enviar a revisión"): leve relieve del propio color */
+.app-root .btn-primary {
+  box-shadow: 0 1px 2px rgba(79, 70, 229, 0.3);
+}
+.app-root .btn-primary:disabled {
+  box-shadow: none;
+}
+
+/* Estados vacíos y de error */
+.app-root .list-empty .empty-title {
+  font-size: 15px;
+  color: var(--text-main);
+}
+.app-root .list-empty .empty-text {
+  line-height: 1.5;
+}
+
+
+/* ---------------------------------------------------------------------
+   B. ESPACIADO Y MEDIDAS  (tablet y escritorio, ≥ 768px)
+   En celular se conserva la lista en tarjetas y los tamaños táctiles.
+   --------------------------------------------------------------------- */
+@media (min-width: 768px) {
+
+  /* Barra superior: más baja, botones del mismo alto */
+  .app-root .topbar {
+    padding: 12px 24px;
+  }
+  .app-root .topbar .btn,
+  .app-root .topbar .back-btn {
+    height: 36px;
+  }
+  .app-root .topbar .btn {
+    padding: 0 14px;
+  }
+  .app-root .topbar .back-btn {
+    padding: 0 12px;
+  }
+  .app-root .topbar-actions {
+    gap: 8px;
+  }
+
+  /* Barra de herramientas de la lista: buscador a la altura de los botones */
+  .app-root .list-header {
+    padding: 12px 24px;
+  }
+  .app-root .list-header input[type="text"] {
+    height: 36px;
+  }
+
+  /* Tabla: filas un poco más compactas, encabezado más bajo */
+  .app-root .list-table th {
+    padding: 10px 24px;
+  }
+  .app-root .list-table td {
+    padding: 14px 24px;
+  }
+
+  /* Montos y porcentaje alineados a la derecha, con su encabezado */
+  .app-root .list-table th:nth-child(3),
+  .app-root .list-table td:nth-child(3),
+  .app-root .list-table th:nth-child(4),
+  .app-root .list-table td:nth-child(4) {
+    text-align: right;
+  }
+
+  /* Botones de acción: cuadrados, de la misma altura que el selector de estado y la fila */
+  .app-root .list-table td:last-child .btn {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    justify-content: center;
+  }
+}
+
+
+/* ---------------------------------------------------------------------
+   C. ANCHOS DE COLUMNA  (laptops y escritorio, ≥ 1024px)
+   Cliente / Proyecto toma todo el espacio libre; el resto, ancho fijo.
+   --------------------------------------------------------------------- */
+@media (min-width: 1024px) {
+  .app-root .list-table th:nth-child(2) { width: 160px; }
+  .app-root .list-table th:nth-child(3) { width: 150px; }
+  .app-root .list-table th:nth-child(4) { width: 110px; }
+  .app-root .list-table th:nth-child(5) { width: 110px; }
+  .app-root .list-table th:nth-child(6) { width: 110px; }
+}

@@ -56,6 +56,14 @@ export const postCliente   = (data)     => apiFetch('/api/clientes', { method: '
 export const putCliente    = (id, data) => apiFetch(`/api/clientes/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 export const deleteCliente = (id)       => apiFetch(`/api/clientes/${id}`, { method: 'DELETE' });
 
+
+// CRM de clientes
+export const getCrmCompleto   = ()               => apiFetch('/api/clientes/crm');
+export const postCanal        = (label)          => apiFetch('/api/clientes/canales',   { method: 'POST',  body: JSON.stringify({ label }) });
+export const postInteres      = (label)          => apiFetch('/api/clientes/intereses', { method: 'POST',  body: JSON.stringify({ label }) });
+export const postOportunidad  = (clienteId, data) => apiFetch(`/api/clientes/${clienteId}/oportunidades`, { method: 'POST',  body: JSON.stringify(data) });
+export const patchOportunidad = (id, data)       => apiFetch(`/api/clientes/oportunidades/${id}`,         { method: 'PATCH', body: JSON.stringify(data) });
+export const postActividad    = (clienteId, data) => apiFetch(`/api/clientes/${clienteId}/actividades`,   { method: 'POST',  body: JSON.stringify(data) });
 // Egresos
 export const getEgresosResumen = (desde, hasta, proyecto) => {
   const q = proyecto && proyecto !== '__todos__' ? `&proyecto=${encodeURIComponent(proyecto)}` : '';
