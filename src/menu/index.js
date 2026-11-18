@@ -19,7 +19,7 @@ export default function getNavItems() {
   } catch {
     privilegios = [];
   }
-
+  
   const tiene = (code) => privilegios.some((item) => item.code === code);
   const items = [];
   items.push(ventas);
