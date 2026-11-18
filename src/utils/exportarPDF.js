@@ -686,10 +686,37 @@ const ajuste = (q, negrita) => {
 //  - Modo ITEMS: un encabezado con el TÍTULO que escribió el usuario (o el de la plantilla
 //    si no escribió nada) y debajo cada ítem como fila propia, con su propio precio.
 // ---------------------------------------------------------------------------
+// function filasInstalacion(quote, etiquetaDefault, detallesFijos = [], { negrita = true, incluirTransporte = false } = {}) {
+//   const total = manoDeObra(quote);
+//   if (total <= 0) return [];
+
+//   if (quote.laborModo === "items") {
+//     const titulo = ((quote.laborTitulo || "").trim() || etiquetaDefault).toUpperCase();
+//     const items = (quote.laborItems || []).filter((l) => l.monto > 0);
+//     return [
+//       { t: "seccion", texto: titulo, valor: total },
+//       ...items.map((l) => ({
+//         t: "item",
+//         qty: 1,
+//         nombre: (l.descripcion || "").trim() || "Ítem de instalación",
+//         pu: l.monto,
+//       })),
+//     ];
+//   }
+
+//   const rows = [{ t: "item", qty: 1, nombre: etiquetaDefault, pu: total, bold: negrita }];
+//   detallesFijos.forEach((s) => rows.push({ t: "detalle", texto: s }));
+//   if (incluirTransporte && !aprobado(quote.transporte)) rows.push({ t: "detalle", texto: "Incluye transporte" });
+//   return rows;
+// }
+const lineasTexto = (s) =>
+  String(s || "").split("\n").map((x) => x.trim()).filter(Boolean);
+
 function filasInstalacion(quote, etiquetaDefault, detallesFijos = [], { negrita = true, incluirTransporte = false } = {}) {
   const total = manoDeObra(quote);
   if (total <= 0) return [];
 
+  // Modo ITEMS: igual que antes
   if (quote.laborModo === "items") {
     const titulo = ((quote.laborTitulo || "").trim() || etiquetaDefault).toUpperCase();
     const items = (quote.laborItems || []).filter((l) => l.monto > 0);
@@ -704,8 +731,14 @@ function filasInstalacion(quote, etiquetaDefault, detallesFijos = [], { negrita 
     ];
   }
 
-  const rows = [{ t: "item", qty: 1, nombre: etiquetaDefault, pu: total, bold: negrita }];
-  detallesFijos.forEach((s) => rows.push({ t: "detalle", texto: s }));
+  // Modo TOTAL: título y descripción propios solo si el usuario marcó "Personalizar".
+  // Si no, sale exactamente lo de siempre.
+  const personal = !!quote.laborPersonalizado;
+  const titulo = ((personal && (quote.laborTitulo || "").trim()) || etiquetaDefault).toUpperCase();
+  const propia = personal ? lineasTexto(quote.laborDescripcion) : [];
+
+  const rows = [{ t: "item", qty: 1, nombre: titulo, pu: total, bold: negrita }];
+  (propia.length ? propia : detallesFijos).forEach((s) => rows.push({ t: "detalle", texto: s }));
   if (incluirTransporte && !aprobado(quote.transporte)) rows.push({ t: "detalle", texto: "Incluye transporte" });
   return rows;
 }

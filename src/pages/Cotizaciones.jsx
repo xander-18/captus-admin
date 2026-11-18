@@ -185,6 +185,9 @@ function blankQuote() {
     certificado: blankExtra(),
     laborModo: "total",     // "total" | "items"
     laborItems: [], 
+    laborPersonalizado: false,  // checkbox: usar título y descripción propios (solo modo "total")
+laborTitulo: "",
+laborDescripcion: "",
     serviciosAdicionales: [],
     descuentos: [],
     nota: "",              // texto libre; sale en el PDF antes de Términos y condiciones
@@ -629,6 +632,13 @@ export default function CotizacionesApp() {
   };
 
   const confirmLabor = () => updateField("laborApproval", "approved");
+const togglePersonalizarLabor = (on) =>
+  setQuote((q) => ({
+    ...q,
+    laborPersonalizado: on,
+    ...(on ? {} : { laborTitulo: "", laborDescripcion: "" }),
+  }));
+
   const toggleExtraRequired = (f) =>
     setQuote((q) => ({ ...q, [f]: q[f].required ? blankExtra() : { ...q[f], required: true } }));
   const updateExtraValue = (f, v) =>
@@ -992,7 +1002,8 @@ const cambiarEstado = async (row, nuevo) => {
     </button>
   </div>
 
-  {(quote.laborModo || "total") === "total" ? (
+ {(quote.laborModo || "total") === "total" ? (
+  <>
     <div className="labor-row">
       <div className="labor-input-wrap">
         <span>S/</span>
@@ -1010,28 +1021,79 @@ const cambiarEstado = async (row, nuevo) => {
         <button className="btn btn-primary" onClick={confirmLabor}>Confirmar</button>
       )}
     </div>
-  ) : (
-    <>
-      <div className="field" style={{ marginBottom: 10 }}>
-        <label>Título en el PDF (opcional — si lo dejas vacío sale el de siempre)</label>
-        <CampoTexto
-          placeholder={esKit ? "Ej. INSTALACIÓN" : "Ej. SERVICIO DE INSTALACIÓN Y MANTENIMIENTO"}
-          value={quote.laborTitulo}
-          onChange={(v) => updateField("laborTitulo", v)}
-        />
-      </div>
-      <LineasLibres
-        label="ÍTEMS DE INSTALACIÓN"
-        textoAgregar="Agregar ítem de instalación"
-        placeholder="Describe el ítem (Ej. Instalación de cámaras, Mantenimiento pozo a tierra)"
-        field="laborItems"
-        lineas={quote.laborItems || []}
-        onAdd={addLinea}
-        onUpdate={updateLinea}
-        onRemove={removeLinea}
+
+    <label className="extra-cost-toggle" style={{ marginTop: 10 }}>
+      <input
+        type="checkbox"
+        checked={!!quote.laborPersonalizado}
+        onChange={(e) => togglePersonalizarLabor(e.target.checked)}
       />
-    </>
-  )}
+      Personalizar título y descripción
+    </label>
+
+    {quote.laborPersonalizado && (
+      <>
+        <div className="field" style={{ marginTop: 8 }}>
+          <label>Título (si lo dejas vacío sale el de siempre)</label>
+          <CampoTexto
+            placeholder={esKit ? "Ej. INSTALACIÓN" : "Ej. SERVICIO DE INSTALACIÓN DE CCTV"}
+            value={quote.laborTitulo}
+            onChange={(v) => updateField("laborTitulo", v)}
+          />
+        </div>
+
+        <div className="field" style={{ marginTop: 8 }}>
+          <label>Descripción (una línea por renglón — si la dejas vacía sale el detalle de siempre)</label>
+          <textarea
+            rows={4}
+            placeholder={"Ej.\nInstalación y configuración de 8 cámaras IP\nTendido de cableado UTP y canalización\nCapacitación al finalizar el servicio"}
+            value={quote.laborDescripcion || ""}
+            onChange={(e) => updateField("laborDescripcion", e.target.value)}
+            onBlur={(e) => {
+              const limpio = e.target.value
+                .split("\n")
+                .map((s) => limpiarEspacios(s))
+                .join("\n")
+                .trim();
+              if (limpio !== e.target.value) updateField("laborDescripcion", limpio);
+            }}
+            style={{
+              width: "100%",
+              resize: "vertical",
+              fontFamily: "inherit",
+              fontSize: 14,
+              padding: "8px 10px",
+              borderRadius: 6,
+              border: "1px solid #cbd5e1",
+              boxSizing: "border-box",
+            }}
+          />
+        </div>
+      </>
+    )}
+  </>
+) : (
+  <>
+    <div className="field" style={{ marginBottom: 10 }}>
+      <label>Título en el PDF (opcional — si lo dejas vacío sale el de siempre)</label>
+      <CampoTexto
+        placeholder={esKit ? "Ej. INSTALACIÓN" : "Ej. SERVICIO DE INSTALACIÓN Y MANTENIMIENTO"}
+        value={quote.laborTitulo}
+        onChange={(v) => updateField("laborTitulo", v)}
+      />
+    </div>
+    <LineasLibres
+      label="ÍTEMS DE INSTALACIÓN"
+      textoAgregar="Agregar ítem de instalación"
+      placeholder="Describe el ítem (Ej. Instalación de cámaras, Mantenimiento pozo a tierra)"
+      field="laborItems"
+      lineas={quote.laborItems || []}
+      onAdd={addLinea}
+      onUpdate={updateLinea}
+      onRemove={removeLinea}
+    />
+  </>
+)}
 
   <div className="separator spaced"></div>
   <ExtraCostRow
